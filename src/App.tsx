@@ -7,14 +7,15 @@ import Background from './components/Background'
 import Login from './components/Login'
 import Signup from './components/Signup'
 import Dashboard from './components/Dashboard'
+import AboutUs from './components/AboutUs'
 import './App.css'
 
 function App() {
-  const [view, setViewState] = useState<'home' | 'login' | 'signup' | 'dashboard'>(() => {
+  const [view, setViewState] = useState<'home' | 'login' | 'signup' | 'dashboard' | 'about'>(() => {
     return (sessionStorage.getItem('antriview_view') as any) || 'home';
   });
 
-  const setView = (newView: 'home' | 'login' | 'signup' | 'dashboard') => {
+  const setView = (newView: 'home' | 'login' | 'signup' | 'dashboard' | 'about') => {
     setViewState(newView);
     sessionStorage.setItem('antriview_view', newView);
   };
@@ -23,13 +24,14 @@ function App() {
   const goToSignup = () => setView('signup');
   const goToHome = () => setView('home');
   const goToDashboard = () => setView('dashboard');
+  const goToAbout = () => setView('about');
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', width: '100%' }}>
       <Background />
       {view === 'home' && (
         <>
-          <Navbar onStart={goToLogin} />
+          <Navbar onStart={goToLogin} onAbout={goToAbout} />
           <main>
             <Hero onStart={goToLogin} />
             
@@ -102,6 +104,15 @@ function App() {
           sessionStorage.clear();
           setView('home');
         }} />
+      )}
+
+      {view === 'about' && (
+        <>
+          <Navbar onStart={goToLogin} onAbout={goToAbout} />
+          <main style={{ paddingTop: '120px', paddingLeft: '60px', paddingRight: '60px' }}>
+            <AboutUs onBack={goToHome} onStart={goToLogin} />
+          </main>
+        </>
       )}
     </div>
   )
