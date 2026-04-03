@@ -208,7 +208,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
                   value={user.email}
                   disabled
                   rightAdornment={<Mail size={16} />}
-                  hint="Email can’t be changed for this demo."
                 />
               </div>
             </SettingsSection>
