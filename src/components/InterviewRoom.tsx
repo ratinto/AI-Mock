@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Send, Video, Clock, ChevronRight, AlertCircle, Code, Palette, Sparkles } from 'lucide-react';
+import { Mic, MicOff, Clock, ChevronRight, Code, Palette, Sparkles } from 'lucide-react';
 import { UserStore } from '../utils/userStore';
 
 // Pure CSS Animated AI Orb (Premium Aesthetic)

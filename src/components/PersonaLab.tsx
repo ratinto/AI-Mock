@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, ShieldCheck, Zap, Heart, Star, ChevronRight } from 'lucide-react';
+import { User, ShieldCheck, Zap, Heart, ChevronRight } from 'lucide-react';
 
 interface Persona {
   id: string;

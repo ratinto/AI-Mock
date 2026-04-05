@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, XCircle, TrendingUp, MessageSquare, Award, ChevronRight, PieChart } from 'lucide-react';
+import { CheckCircle2, TrendingUp, ChevronRight } from 'lucide-react';
 
 const MetricBar = ({ label, score, color }: { label: string, score: number, color: string }) => (
   <div style={{ marginBottom: '20px' }}>
