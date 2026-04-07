@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserStore } from '../utils/userStore';
+import { useServices } from '../app/ServicesProvider';
 
 interface LoginProps {
   onBack: () => void;
@@ -9,12 +9,12 @@ interface LoginProps {
 
 const Login: React.FC<LoginProps> = ({ onBack, onLogin, onSignup }) => {
   const [email, setEmail] = useState('');
+  const { auth } = useServices();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const user = UserStore.getUser(email);
-    if (user) {
-      UserStore.setCurrentUser(email);
+    const result = auth.loginByEmail(email);
+    if (result.ok) {
       onLogin();
     } else {
       alert('User not found. Please sign up first.');

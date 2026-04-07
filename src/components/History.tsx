@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Calendar, Award, Flame, BarChart2, Star } from 'lucide-react';
-import { UserStore } from '../utils/userStore';
+import { useServices } from '../app/ServicesProvider';
 
 const HistoryItem = ({ role, date, score, type }: { role: string, date: string, score: string, type: string }) => (
   <div className="dash-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', marginBottom: '12px' }}>
@@ -24,7 +24,8 @@ const HistoryItem = ({ role, date, score, type }: { role: string, date: string, 
 );
 
 const History: React.FC = () => {
-  const currentUser = useMemo(() => UserStore.getCurrentUser(), []);
+  const { auth } = useServices();
+  const currentUser = useMemo(() => auth.getCurrentUser(), [auth]);
 
   if (!currentUser) return null;
 

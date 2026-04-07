@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { LayoutGrid, Beaker, FileText, History as HistoryIcon, User, Plus, LogOut, ChevronRight } from 'lucide-react';
-import { UserStore } from '../utils/userStore';
+import { useServices } from '../app/ServicesProvider';
 import InterviewSetup from './InterviewSetup';
 import ResumeAI from './ResumeAI';
 import History from './History';
@@ -50,6 +50,7 @@ const FeatureBox = ({ icon, title, desc, onClick }: { icon: React.ReactNode, tit
 type DashboardView = 'overview' | 'persona' | 'resume' | 'history' | 'setup' | 'interview' | 'report' | 'profile';
 
 const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+  const { auth } = useServices();
   const [activeView, setActiveViewState] = useState<DashboardView>(() => {
     return (sessionStorage.getItem('antriview_dash_view') as any) || 'overview';
   });
@@ -57,7 +58,7 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [interviewConfig, setInterviewConfig] = useState<{ role: string, track: 'dsa' | 'hr' | 'dev' }>({ role: 'SDE', track: 'dsa' });
 
-  const currentUser = useMemo(() => UserStore.getCurrentUser(), [refreshTrigger]);
+  const currentUser = useMemo(() => auth.getCurrentUser(), [auth, refreshTrigger]);
 
   if (!currentUser) {
     onLogout();

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, Mail, CheckCircle, Shield } from 'lucide-react';
-import type { UserData } from '../utils/userStore';
-import { UserStore } from '../utils/userStore';
+import type { UserData } from '../domain/user';
+import { useServices } from '../app/ServicesProvider';
 
 interface ProfileProps {
   user: UserData;
@@ -13,16 +13,17 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const { profile } = useServices();
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Update name
-    UserStore.updateUser(user.email, { name });
+    profile.updateUser(user.email, { name });
     
     // Handle password update simulation
     if (newPassword && currentPassword) {
-      UserStore.updateUser(user.email, { password: newPassword });
+      profile.updateUser(user.email, { password: newPassword });
     }
 
     setIsSaved(true);

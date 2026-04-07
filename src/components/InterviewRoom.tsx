@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Clock, ChevronRight, Code, Palette, Sparkles } from 'lucide-react';
-import { UserStore } from '../utils/userStore';
+import { useServices } from '../app/ServicesProvider';
 
 // Pure CSS Animated AI Orb (Premium Aesthetic)
 const AIInterviewerOrb = () => (
@@ -44,6 +44,7 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
   const [transcript, setTranscript] = useState("");
   const [timer, setTimer] = useState(300); // 5 minutes in seconds
   const [showEditor, setShowEditor] = useState(false);
+  const { auth, sessions } = useServices();
   
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -209,12 +210,12 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
                       setCurrentQuestion(c => c + 1);
                       setTranscript("");
                     } else {
-                      const user = UserStore.getCurrentUser();
+                      const user = auth.getCurrentUser();
                       if (user) {
                         const scores = ['A', 'A-', 'B+', 'B', 'B-'];
                         const randomScore = scores[Math.floor(Math.random() * scores.length)];
                         
-                        UserStore.addSession(user.email, {
+                        sessions.addSession(user.email, {
                           id: Date.now().toString(),
                           role: role,
                           date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
