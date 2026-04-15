@@ -66,6 +66,14 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     return null;
   }
 
+  const displayName = (() => {
+    const raw = (currentUser.name ?? '').trim();
+    if (raw) return raw.split(/\s+/)[0];
+    const email = (currentUser.email ?? '').trim();
+    if (email.includes('@')) return email.split('@')[0];
+    return 'there';
+  })();
+
   const setActiveView = (view: DashboardView) => {
     setActiveViewState(view);
     sessionStorage.setItem('antriview_dash_view', view);
@@ -76,13 +84,13 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       case 'overview':
         return (
           <div className="animate-fade">
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '56px' }}>
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '56px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '2px', marginBottom: '12px', textTransform: 'uppercase' }}>
                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-primary)' }}></div>
                    User Session Active
                 </div>
-                <h1 className="title-xl" style={{ marginBottom: '12px' }}>Hello, {currentUser.name.split(' ')[0]}.</h1>
+                <h1 className="title-xl" style={{ marginBottom: '12px' }}>Hello, {displayName}.</h1>
                 <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Your tailored technical interview roadmap is ready.</p>
               </div>
               <button className="btn-white" onClick={() => setActiveView('setup')}>
@@ -205,7 +213,14 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       
       {/* Sidebar */}
       <aside className="dash-sidebar">
-        <div style={{ marginBottom: '56px' }} />
+        <div style={{ marginBottom: '40px', paddingLeft: '12px' }}>
+          <div style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.8px', lineHeight: 1.1 }}>
+            AntriView <span style={{ color: 'var(--accent-primary)' }}>AI</span>
+          </div>
+          <div style={{ marginTop: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>
+            Interview prep workspace
+          </div>
+        </div>
         
         <nav style={{ flexGrow: 1 }}>
           <button className={`nav-item ${activeView === 'overview' ? 'active' : ''}`} onClick={() => setActiveView('overview')}>

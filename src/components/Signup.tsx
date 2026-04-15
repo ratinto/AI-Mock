@@ -14,7 +14,13 @@ const Signup: React.FC<SignupProps> = ({ onBack, onLogin, onSignup }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    auth.signup(email, name);
+    const cleanedName = name.trim();
+    const cleanedEmail = email.trim();
+    if (!cleanedName) {
+      alert('Please enter your name.');
+      return;
+    }
+    auth.signup(cleanedEmail, cleanedName);
     onSignup(); // Mock signup success
   };
 
