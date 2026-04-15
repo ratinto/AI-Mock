@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { LayoutGrid, Beaker, FileText, History as HistoryIcon, User, Plus, LogOut, ChevronRight, Info } from 'lucide-react';
+import { LayoutGrid, Beaker, FileText, History as HistoryIcon, User, Plus, LogOut, ChevronRight, Info, Flame } from 'lucide-react';
 import { useServices } from '../app/ServicesProvider';
 import InterviewSetup from './InterviewSetup';
 import ResumeAI from './ResumeAI';
@@ -7,6 +7,7 @@ import History from './History';
 import InterviewRoom from './InterviewRoom';
 import Report from './Report';
 import PersonaLab from './PersonaLab';
+import { getSelectedPersona } from './PersonaLab';
 import Profile from './Profile';
 import AboutUs from './AboutUs';
 
@@ -30,7 +31,7 @@ const TrackCard: React.FC<TrackCardProps> = ({ title, count, progress, type }) =
       <div className="progress-fill" style={{ width: `${progress}%` }}></div>
     </div>
     <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 600 }}>
-       <span style={{ color: 'var(--accent-primary)' }}>Level 4</span>
+       <span style={{ color: 'var(--accent-primary)' }}>Level {Math.max(1, Math.floor(progress / 25) + 1)}</span>
        <span style={{ color: 'var(--text-muted)' }}>{progress}% Mastered</span>
     </div>
   </div>
@@ -57,9 +58,12 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   });
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [interviewConfig, setInterviewConfig] = useState<{ role: string, track: 'dsa' | 'hr' | 'dev' }>({ role: 'SDE', track: 'dsa' });
+  const [interviewConfig, setInterviewConfig] = useState<{ role: string, track: 'dsa' | 'hr' | 'dev', personaId?: string }>({ role: 'SDE', track: 'dsa' });
 
   const currentUser = useMemo(() => auth.getCurrentUser(), [auth, refreshTrigger]);
+
+  // Get the currently selected persona
+  const activePersona = useMemo(() => getSelectedPersona(), [refreshTrigger]);
 
   if (!currentUser) {
     onLogout();
@@ -93,9 +97,27 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 <h1 className="title-xl" style={{ marginBottom: '12px' }}>Hello, {displayName}.</h1>
                 <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Your tailored technical interview roadmap is ready.</p>
               </div>
-              <button className="btn-white" onClick={() => setActiveView('setup')}>
-                <Plus size={18} /> Start New Prep
-              </button>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {/* Streak Badge */}
+                {currentUser.streak > 0 && (
+                  <div className="streak-badge animate-fade" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    borderRadius: '16px',
+                    background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(245, 158, 11, 0.1))',
+                    border: '1px solid rgba(245, 158, 11, 0.2)',
+                  }}>
+                    <Flame size={20} className="streak-flame" style={{ color: '#f59e0b' }} />
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{currentUser.streak}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>day streak</span>
+                  </div>
+                )}
+                <button className="btn-white" onClick={() => setActiveView('setup')}>
+                  <Plus size={18} /> Start New Prep
+                </button>
+              </div>
             </header>
 
             {/* Premium Onboarding Banner */}
@@ -118,6 +140,32 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 Quick Tour <ChevronRight size={18} />
               </button>
             </div>
+
+            {/* Active Persona Indicator */}
+            {activePersona && (
+              <div className="dash-card animate-fade" style={{
+                marginBottom: '40px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '20px 28px',
+                background: `${activePersona.color}08`,
+                borderColor: `${activePersona.color}25`,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ padding: '10px', borderRadius: '12px', background: `${activePersona.color}20`, color: activePersona.color }}>
+                    {activePersona.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Active Interviewer</div>
+                    <div style={{ fontWeight: 700 }}>{activePersona.name} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>— {activePersona.role}</span></div>
+                  </div>
+                </div>
+                <button className="btn-outline" onClick={() => setActiveView('persona')} style={{ fontSize: '0.85rem' }}>
+                  Change
+                </button>
+              </div>
+            )}
 
             {/* Primary Tracks */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '56px' }}>
@@ -172,16 +220,21 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           </div>
         );
       case 'persona':
-        return <PersonaLab />;
+        return <PersonaLab onSelectPersona={() => {
+          // Save the persona selection, then navigate to setup
+          setRefreshTrigger(t => t + 1);
+          setActiveView('setup');
+        }} />;
       case 'resume':
         return <ResumeAI />;
       case 'setup':
         return <InterviewSetup 
           onStart={(config) => { 
-            const trackMapping: any = { 'DSA': 'dsa', 'System Design': 'dev', 'HR': 'hr', 'Mixed': 'dsa' };
+            const trackMapping: any = { 'DSA': 'dsa', 'System Design': 'dev', 'HR': 'hr', 'HR / Behavioral': 'hr', 'Mixed': 'dsa' };
             setInterviewConfig({ 
               role: config.role, 
-              track: trackMapping[config.type] || 'dsa' 
+              track: trackMapping[config.type] || 'dsa',
+              personaId: activePersona?.id,
             });
             setActiveView('interview'); 
           }} 
@@ -199,7 +252,7 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           />
         );
       case 'interview':
-        return <InterviewRoom track={interviewConfig.track} role={interviewConfig.role} onEnd={() => setActiveView('report')} />;
+        return <InterviewRoom track={interviewConfig.track} role={interviewConfig.role} onEnd={() => { setRefreshTrigger(t => t + 1); setActiveView('report'); }} />;
       case 'report':
         return <Report onBack={() => setActiveView('overview')} />;
       default:
@@ -228,6 +281,16 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           </button>
           <button className={`nav-item ${activeView === 'persona' ? 'active' : ''}`} onClick={() => setActiveView('persona')}>
             <Beaker size={20} /> Persona Lab
+            {activePersona && (
+              <span style={{
+                marginLeft: 'auto',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: activePersona.color,
+                boxShadow: `0 0 8px ${activePersona.color}60`,
+              }} />
+            )}
           </button>
           <button className={`nav-item ${activeView === 'resume' ? 'active' : ''}`} onClick={() => setActiveView('resume')}>
             <FileText size={20} /> Resume AI
@@ -253,6 +316,20 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               <div style={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentUser.name}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentUser.email}</div>
             </div>
+            {/* Mini streak in sidebar */}
+            {currentUser.streak > 0 && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.8rem',
+                fontWeight: 800,
+                color: '#f59e0b',
+              }}>
+                <Flame size={14} className="streak-flame" />
+                {currentUser.streak}
+              </div>
+            )}
           </div>
         </div>
 
@@ -270,4 +347,3 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 };
 
 export default Dashboard;
-

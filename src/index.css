@@ -199,3 +199,80 @@ h1, h2, h3 {
   letter-spacing: 0.05em;
   background: rgba(255, 255, 255, 0.05);
 }
+
+/* ---- Streak Flame Animation ---- */
+@keyframes flamePulse {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 2px rgba(245, 158, 11, 0.3)); transform: scale(1); }
+  50% { filter: brightness(1.3) drop-shadow(0 0 8px rgba(245, 158, 11, 0.6)); transform: scale(1.15); }
+}
+
+.streak-flame {
+  animation: flamePulse 1.5s ease-in-out infinite;
+}
+
+.streak-badge {
+  transition: all 0.3s ease;
+}
+
+.streak-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.15);
+}
+
+/* ---- Spinner ---- */
+@keyframes spinAnim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-animation {
+  animation: spinAnim 1s linear infinite;
+}
+
+/* ---- Resume Upload Drop Zone ---- */
+.resume-drop-zone {
+  transition: all 0.3s ease;
+}
+
+.resume-drop-zone.dragging {
+  border-color: #6366f1 !important;
+  background: rgba(99, 102, 241, 0.06) !important;
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.1);
+}
+
+/* ---- Recording Indicator ---- */
+.circle-online {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ---- Persona Card Selection Shimmer ---- */
+.dash-card {
+  position: relative;
+}
+
+/* ---- Scrollbar Styles ---- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

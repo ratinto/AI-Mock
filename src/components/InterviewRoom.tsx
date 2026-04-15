@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Mic, MicOff, Clock, ChevronRight, Code, Palette, Sparkles } from 'lucide-react';
 import { useServices } from '../app/ServicesProvider';
+import { getSelectedPersona } from './PersonaLab';
 
 // Pure CSS Animated AI Orb (Premium Aesthetic)
-const AIInterviewerOrb = () => (
+const AIInterviewerOrb = ({ color = '#3b82f6' }: { color?: string }) => (
   <div style={{ 
     width: '180px', 
     height: '180px', 
     borderRadius: '50%', 
-    background: 'radial-gradient(circle at 30% 30%, #ffffff, #3b82f6)',
-    boxShadow: '0 0 60px rgba(59, 130, 246, 0.4), inset 0 0 40px rgba(255, 255, 255, 0.4)',
+    background: `radial-gradient(circle at 30% 30%, #ffffff, ${color})`,
+    boxShadow: `0 0 60px ${color}66, inset 0 0 40px rgba(255, 255, 255, 0.4)`,
     position: 'relative',
     animation: 'orbFloat 4s ease-in-out infinite, orbPulse 2s ease-in-out infinite',
     filter: 'blur(1px)'
@@ -31,8 +32,8 @@ const AIInterviewerOrb = () => (
         50% { transform: translateY(-20px) scale(0.95); }
       }
       @keyframes orbPulse {
-        0%, 100% { box-shadow: 0 0 60px rgba(59, 130, 246, 0.4); }
-        50% { box-shadow: 0 0 100px rgba(59, 130, 246, 0.6); }
+        0%, 100% { box-shadow: 0 0 60px ${color}66; }
+        50% { box-shadow: 0 0 100px ${color}99; }
       }
     `}</style>
   </div>
@@ -47,6 +48,12 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
   const { auth, sessions } = useServices();
   
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Get the selected persona
+  const persona = useMemo(() => getSelectedPersona(), []);
+  const personaName = persona?.name ?? 'AI Interviewer';
+  const personaColor = persona?.color ?? '#3b82f6';
+  const personaRole = persona?.role ?? 'Technical Interviewer';
 
   const questions = [
     {
@@ -114,14 +121,18 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
           </div>
         </div>
 
-        <div style={{ flexGrow: 1, borderRadius: '32px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '40px' }}>
-          <AIInterviewerOrb />
+        <div style={{ flexGrow: 1, borderRadius: '32px', background: 'rgba(255,255,255,0.02)', border: `1px solid ${personaColor}25`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '40px' }}>
+          <AIInterviewerOrb color={personaColor} />
           <div style={{ marginTop: '40px', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#3b82f6', background: 'rgba(59, 130, 246, 0.1)', padding: '6px 16px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '1px', marginBottom: '12px' }}>
-              <Sparkles size={14} /> AI ENGINE ACTIVE
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: personaColor, background: `${personaColor}18`, padding: '6px 16px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '1px', marginBottom: '12px' }}>
+              <Sparkles size={14} /> {persona ? personaName.toUpperCase() : 'AI ENGINE ACTIVE'}
             </div>
-            <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>Listening to your response...</p>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '8px' }}>Press Mic to start speaking</p>
+            <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              {persona ? `${personaName} is listening...` : 'Listening to your response...'}
+            </p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              {persona ? personaRole : 'Press Mic to start speaking'}
+            </p>
           </div>
         </div>
       </div>
@@ -131,7 +142,7 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
         <div className="dash-card" style={{ flexGrow: 1, position: 'relative', display: 'flex', flexDirection: 'column', padding: '40px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800 }}>QUESTION {currentQuestion + 1} OF 3</span>
+              <span style={{ padding: '8px 16px', background: `${personaColor}18`, color: personaColor, borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800 }}>QUESTION {currentQuestion + 1} OF 3</span>
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>{questions[currentQuestion].type} Round</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: timer < 60 ? '#ef4444' : '#fff', fontWeight: 800, fontSize: '1.1rem', background: 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: '12px' }}>
@@ -239,4 +250,3 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
 };
 
 export default InterviewRoom;
-
