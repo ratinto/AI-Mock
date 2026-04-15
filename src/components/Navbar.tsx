@@ -2,9 +2,10 @@ import React from 'react';
 
 interface NavbarProps {
   onStart: () => void;
+  onAbout?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onStart }) => {
+const Navbar: React.FC<NavbarProps> = ({ onStart, onAbout }) => {
   return (
     <nav style={{
       width: '100%',
@@ -36,12 +37,16 @@ const Navbar: React.FC<NavbarProps> = ({ onStart }) => {
       {/* Center/Right Links */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
         <div style={{ display: 'flex', gap: '30px', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>
-          <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>About Us</a>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
-          </div>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              onAbout?.();
+            }}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+          >
+            About Us
+          </a>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>

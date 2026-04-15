@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { LayoutGrid, Beaker, FileText, History as HistoryIcon, User, Plus, LogOut, ChevronRight } from 'lucide-react';
+import { LayoutGrid, Beaker, FileText, History as HistoryIcon, User, Plus, LogOut, ChevronRight, Info } from 'lucide-react';
 import { useServices } from '../app/ServicesProvider';
 import InterviewSetup from './InterviewSetup';
 import ResumeAI from './ResumeAI';
@@ -8,6 +8,7 @@ import InterviewRoom from './InterviewRoom';
 import Report from './Report';
 import PersonaLab from './PersonaLab';
 import Profile from './Profile';
+import AboutUs from './AboutUs';
 
 interface TrackCardProps {
   title: string;
@@ -47,7 +48,7 @@ const FeatureBox = ({ icon, title, desc, onClick }: { icon: React.ReactNode, tit
   </div>
 );
 
-type DashboardView = 'overview' | 'persona' | 'resume' | 'history' | 'setup' | 'interview' | 'report' | 'profile';
+type DashboardView = 'overview' | 'persona' | 'resume' | 'history' | 'setup' | 'interview' | 'report' | 'profile' | 'about';
 
 const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const { auth } = useServices();
@@ -182,6 +183,13 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         return <History />;
       case 'profile':
         return <Profile user={currentUser} onUpdate={() => setRefreshTrigger(t => t + 1)} />;
+      case 'about':
+        return (
+          <AboutUs
+            onBack={() => setActiveView('overview')}
+            onStart={() => setActiveView('setup')}
+          />
+        );
       case 'interview':
         return <InterviewRoom track={interviewConfig.track} role={interviewConfig.role} onEnd={() => setActiveView('report')} />;
       case 'report':
@@ -197,12 +205,7 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       
       {/* Sidebar */}
       <aside className="dash-sidebar">
-        <div style={{ marginBottom: '56px', paddingLeft: '12px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.5rem', fontWeight: 900 }}>A</div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-1px' }}>
-            Antri<span style={{ color: 'var(--accent-primary)' }}>View</span>
-          </div>
-        </div>
+        <div style={{ marginBottom: '56px' }} />
         
         <nav style={{ flexGrow: 1 }}>
           <button className={`nav-item ${activeView === 'overview' ? 'active' : ''}`} onClick={() => setActiveView('overview')}>
@@ -216,6 +219,9 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           </button>
           <button className={`nav-item ${activeView === 'history' ? 'active' : ''}`} onClick={() => setActiveView('history')}>
             <HistoryIcon size={20} /> History
+          </button>
+          <button className={`nav-item ${activeView === 'about' ? 'active' : ''}`} onClick={() => setActiveView('about')}>
+            <Info size={20} /> About Us
           </button>
           <button className={`nav-item ${activeView === 'profile' ? 'active' : ''}`} onClick={() => setActiveView('profile')}>
             <User size={20} /> Settings
