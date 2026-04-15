@@ -1,119 +1,41 @@
-export interface UserStats {
-  sessions: number;
-  progress: number;
-}
+// Backwards-compatible facade for existing imports.
+// New code should depend on application use-cases (via `useServices()`).
 
-export interface HistoryItem {
-  id: string;
-  role: string;
-  date: string;
-  score: string;
-  type: string;
-}
+import type { HistoryItem, UserData } from '../domain/user';
+import { createAuthUseCases } from '../application/useCases/auth';
+import { createSessionUseCases } from '../application/useCases/sessions';
+import { createUserProfileUseCases } from '../application/useCases/userProfile';
+import { LocalStorageUserRepository } from '../infrastructure/repositories/localStorageUserRepository';
+import { SessionStorageSessionRepository } from '../infrastructure/repositories/sessionStorageSessionRepository';
+import { browserLocalStorage, browserSessionStorage } from '../infrastructure/storage/browserStorage';
 
-export interface UserData {
-  email: string;
-  name: string;
-  password?: string;
-  stats: {
-    dsa: UserStats;
-    hr: UserStats;
-    dev: UserStats;
-  };
-  history: HistoryItem[];
-  streak: number;
-  skills: { label: string; score: number; color: string }[];
-}
+export type { HistoryItem, UserData };
 
-const STORAGE_KEY = 'antriview_user_db';
-const SESSION_KEY = 'antriview_current_user';
+const usersRepo = new LocalStorageUserRepository(browserLocalStorage, {
+  storageKey: 'antriview_user_db',
+});
+
+const sessionRepo = new SessionStorageSessionRepository(browserSessionStorage, {
+  sessionKey: 'antriview_current_user',
+  additionalKeysToClear: ['antriview_view', 'antriview_dash_view'],
+});
+
+const auth = createAuthUseCases({ users: usersRepo, session: sessionRepo });
+const sessions = createSessionUseCases({ users: usersRepo });
+const profile = createUserProfileUseCases({ users: usersRepo });
 
 export const UserStore = {
-  // Get all users from localStorage
-  getAllUsers: (): Record<string, UserData> => {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : {};
-  },
-
-  // Save/Update a user
-  saveUser: (user: UserData) => {
-    const users = UserStore.getAllUsers();
-    users[user.email] = { ...user };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-  },
-
-  updateUser: (email: string, updates: Partial<UserData>) => {
-    const user = UserStore.getUser(email);
-    if (user) {
-      const updatedUser = { ...user, ...updates };
-      UserStore.saveUser(updatedUser);
-      return updatedUser;
-    }
-    return null;
-  },
-
-  // Get a specific user by email
-  getUser: (email: string): UserData | null => {
-    const users = UserStore.getAllUsers();
-    return users[email] || null;
-  },
-
-  // Create a new user with default stats
-  createUser: (email: string, name: string): UserData => {
-    const newUser: UserData = {
-      email,
-      name,
-      stats: {
-        dsa: { sessions: 0, progress: 0 },
-        hr: { sessions: 0, progress: 0 },
-        dev: { sessions: 0, progress: 0 }
-      },
-      history: [],
-      streak: 0,
-      skills: [
-        { label: 'OS & Networking', score: 0, color: '#3b82f6' },
-        { label: 'Data Structures', score: 0, color: '#10b981' },
-        { label: 'System Design', score: 0, color: '#f59e0b' },
-        { label: 'Behavioral', score: 0, color: '#8b5cf6' }
-      ]
-    };
-    UserStore.saveUser(newUser);
-    return newUser;
-  },
-
-  // Session Management
+  getAllUsers: (): Record<string, UserData> => usersRepo.getAll(),
+  saveUser: (user: UserData) => usersRepo.save(user),
+  getUser: (email: string): UserData | null => usersRepo.getByEmail(email),
+  updateUser: (email: string, updates: Partial<UserData>) => profile.updateUser(email, updates),
+  createUser: (email: string, name: string): UserData => auth.signup(email, name),
   setCurrentUser: (email: string) => {
-    sessionStorage.setItem(SESSION_KEY, email);
+    // Preserve legacy behavior: it sets session if user exists.
+    auth.loginByEmail(email);
   },
-
-  getCurrentUser: (): UserData | null => {
-    const email = sessionStorage.getItem(SESSION_KEY);
-    if (!email) return null;
-    return UserStore.getUser(email);
-  },
-
-  logout: () => {
-    sessionStorage.removeItem(SESSION_KEY);
-    sessionStorage.removeItem('antriview_view');
-    sessionStorage.removeItem('antriview_dash_view');
-  },
-
-  // Update stats after a session
-  addSession: (email: string, item: HistoryItem, track: 'dsa' | 'hr' | 'dev') => {
-    const user = UserStore.getUser(email);
-    if (user) {
-      user.history.unshift(item);
-      user.stats[track].sessions += 1;
-      
-      // Basic progress simulation logic
-      const newProgress = Math.min(100, user.stats[track].progress + 15);
-      user.stats[track].progress = newProgress;
-      
-      // Update a random skill for mock feedback
-      const skillIdx = Math.floor(Math.random() * user.skills.length);
-      user.skills[skillIdx].score = Math.min(100, user.skills[skillIdx].score + 10);
-      
-      UserStore.saveUser(user);
-    }
-  }
+  getCurrentUser: (): UserData | null => auth.getCurrentUser(),
+  logout: () => auth.logout(),
+  addSession: (email: string, item: HistoryItem, track: 'dsa' | 'hr' | 'dev') =>
+    sessions.addSession(email, item, track),
 };

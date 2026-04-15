@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { UserStore } from '../utils/userStore';
+import { useServices } from '../app/ServicesProvider';
 
 export function useRequireAuth() {
   const [tick, setTick] = useState(0);
+  const { auth } = useServices();
 
   useEffect(() => {
     const onStorage = () => setTick((t) => t + 1);
@@ -12,8 +13,8 @@ export function useRequireAuth() {
 
   const user = useMemo(() => {
     void tick;
-    return UserStore.getCurrentUser();
-  }, [tick]);
+    return auth.getCurrentUser();
+  }, [auth, tick]);
 
   return { user, isAuthed: Boolean(user) } as const;
 }

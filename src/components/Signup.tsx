@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserStore } from '../utils/userStore';
+import { useServices } from '../app/ServicesProvider';
 
 interface SignupProps {
   onBack: () => void;
@@ -10,11 +10,11 @@ interface SignupProps {
 const Signup: React.FC<SignupProps> = ({ onBack, onLogin, onSignup }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const { auth } = useServices();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    UserStore.createUser(email, name);
-    UserStore.setCurrentUser(email);
+    auth.signup(email, name);
     onSignup(); // Mock signup success
   };
 
