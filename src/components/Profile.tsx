@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { User, Mail, Lock, CheckCircle, Shield } from 'lucide-react';
-import { UserData, UserStore } from '../utils/userStore';
+import { User, Mail, CheckCircle, Shield } from 'lucide-react';
+import type { UserData } from '../utils/userStore';
+import { UserStore } from '../utils/userStore';
 
 interface ProfileProps {
   user: UserData;

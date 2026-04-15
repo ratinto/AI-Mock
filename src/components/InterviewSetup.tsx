@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, Briefcase, BarChart3, Clock, Zap, Target } from 'lucide-react';
+import { ChevronRight, Briefcase, BarChart3, Target } from 'lucide-react';
 
 interface SetupProps {
   onStart: (config: any) => void;
