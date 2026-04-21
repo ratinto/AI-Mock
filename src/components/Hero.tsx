@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronRight } from 'lucide-react';
 
 interface HeroProps {
   onStart: () => void;
@@ -14,41 +15,50 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
       justifyContent: 'center',
       textAlign: 'center',
       padding: '0 20px',
-      position: 'relative'
+      position: 'relative',
+      background: 'transparent'
     }}>
       {/* AI Advisor Badge */}
-      <div className="badge-ai animate-fade" style={{ animationDelay: '0.1s' }}>
+      <div className="badge-status animate-fade" style={{ animationDelay: '0.1s', padding: '8px 16px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
         <div className="circle-online"></div>
-        Your AI Career Advisor
+        AI Career Advisor Active
       </div>
 
       {/* Main Headline */}
       <h1 className="animate-fade" style={{ 
-        fontSize: 'clamp(3rem, 12vw, 9rem)', 
+        fontSize: 'clamp(3.5rem, 12vw, 8.5rem)', 
         maxWidth: '1200px',
-        marginBottom: '2rem',
-        animationDelay: '0.3s'
+        marginBottom: '1.5rem',
+        animationDelay: '0.3s',
+        lineHeight: 0.9,
+        fontWeight: 900,
+        letterSpacing: '-0.05em'
       }}>
         Career<br />By Design.
       </h1>
 
       {/* Subheadline */}
-      <p className="subheadline animate-fade" style={{ 
+      <p className="animate-fade" style={{ 
         marginBottom: '3rem',
-        animationDelay: '0.5s'
+        animationDelay: '0.5s',
+        color: 'var(--text-muted)',
+        fontSize: '1.2rem',
+        maxWidth: '600px',
+        lineHeight: 1.6,
+        fontWeight: 500
       }}>
         Land the job you actually want. AntriView helps you close skill gaps, 
-        ace interviews, and make your resume stand out - all in one place.
+        ace interviews, and make your resume stand out.
       </p>
 
       {/* CTA Button */}
-      <div className="animate-fade" style={{ animationDelay: '0.7s' }}>
-        <button className="btn-white" onClick={onStart}>
-          Get Started Free
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-            <polyline points="12 5 19 12 12 19"></polyline>
-          </svg>
+      <div className="animate-fade" style={{ animationDelay: '0.7s', display: 'flex', gap: '16px' }}>
+        <button className="btn-black" onClick={onStart} style={{ padding: '16px 40px', fontSize: '1rem' }}>
+          Get Started
+          <ChevronRight size={20} />
+        </button>
+        <button className="btn-white" onClick={() => {}} style={{ padding: '16px 40px', fontSize: '1rem' }}>
+          View Pricing
         </button>
       </div>
     </section>

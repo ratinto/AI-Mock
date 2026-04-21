@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { User, Mail, CheckCircle, Shield, KeyRound, Save, RotateCcw, AlertTriangle } from 'lucide-react';
+import { User, Mail, CheckCircle, Shield, KeyRound, Save, RotateCcw, AlertTriangle, ChevronRight } from 'lucide-react';
 import type { UserData } from '../domain/user';
 import { useServices } from '../app/ServicesProvider';
 
@@ -33,7 +33,7 @@ const Field: React.FC<FieldProps> = ({
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginLeft: '4px', fontWeight: 600 }}>
+      <label style={{ fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
         {label}
       </label>
       <div style={{ position: 'relative' }}>
@@ -46,23 +46,25 @@ const Field: React.FC<FieldProps> = ({
           style={{
             width: '100%',
             padding: rightAdornment ? '12px 44px 12px 16px' : '12px 16px',
-            borderRadius: '14px',
-            background: disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${error ? 'rgba(239, 68, 68, 0.45)' : 'var(--border-subtle)'}`,
-            color: disabled ? 'var(--text-secondary)' : '#fff',
+            borderRadius: '12px',
+            background: disabled ? 'var(--bg-secondary)' : '#fff',
+            border: `1px solid ${error ? '#ef4444' : 'var(--border-subtle)'}`,
+            color: disabled ? 'var(--text-muted)' : 'var(--text-main)',
             outline: 'none',
             cursor: disabled ? 'not-allowed' : 'text',
-            boxShadow: error ? '0 0 0 3px rgba(239, 68, 68, 0.12)' : 'none',
+            boxShadow: error ? '0 0 0 2px rgba(239, 68, 68, 0.1)' : 'none',
+            fontSize: '0.95rem',
+            transition: 'all 0.2s ease'
           }}
         />
         {rightAdornment && (
-          <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', opacity: disabled ? 0.35 : 0.6 }}>
+          <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
             {rightAdornment}
           </div>
         )}
       </div>
       {error ? (
-        <div style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 600 }}>{error}</div>
+        <div style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}>{error}</div>
       ) : hint ? (
         <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: 1.5 }}>{hint}</div>
       ) : null}
@@ -79,27 +81,25 @@ type SettingsSectionProps = {
 
 const SettingsSection: React.FC<SettingsSectionProps> = ({ icon, title, subtitle, children }) => {
   return (
-    <section className="dash-card glass-effect" style={{ padding: '30px 30px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '18px', marginBottom: '22px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-          <div
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '14px',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid var(--border-glass)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {icon}
-          </div>
-          <div>
-            <div style={{ fontSize: '1.05rem', fontWeight: 800, letterSpacing: '-0.2px' }}>{title}</div>
-            {subtitle && <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>{subtitle}</div>}
-          </div>
+    <section className="dash-card" style={{ padding: '32px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '24px' }}>
+        <div
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            background: 'var(--bg-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--text-main)'
+          }}
+        >
+          {icon}
+        </div>
+        <div>
+          <div style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '-0.5px' }}>{title}</div>
+          {subtitle && <div style={{ marginTop: '4px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{subtitle}</div>}
         </div>
       </div>
       {children}
@@ -143,7 +143,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
     if (wantsPasswordChange) profile.updateUser(user.email, { password: newPassword.trim() });
 
     setIsSaved(true);
-    onUpdate(); // Trigger dashboard refresh
+    onUpdate(); 
     setCurrentPassword('');
     setNewPassword('');
 
@@ -172,29 +172,29 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
 
   return (
     <div className="animate-fade">
-      <header style={{ marginBottom: '26px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '18px', flexWrap: 'wrap' }}>
+      <header style={{ marginBottom: '40px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '24px' }}>
         <div>
-          <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '8px', letterSpacing: '-0.8px' }}>Account Settings</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Update your profile and security preferences.</p>
+          <h2 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1.5px', marginBottom: '8px' }}>Security & Profile</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem' }}>Full control over your workspace identity and safety.</p>
         </div>
         {isSaved && (
-          <div className="animate-fade" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#10b981', fontWeight: 700 }}>
-            <CheckCircle size={20} /> Saved
+          <div className="animate-fade" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontWeight: 700, fontSize: '0.9rem' }}>
+            <CheckCircle size={18} /> Changes Applied
           </div>
         )}
       </header>
 
-      <form onSubmit={handleSave} style={{ maxWidth: '980px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', gap: '22px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+      <form onSubmit={handleSave} style={{ maxWidth: '100%' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             <SettingsSection
-              icon={<User size={18} color="#3b82f6" />}
-              title="Personal information"
-              subtitle="This is how your name appears across the dashboard."
+              icon={<User size={18} />}
+              title="Personal Information"
+              subtitle="This is how you'll be identified in interview reports."
             >
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <Field
-                  label="Full name"
+                  label="Display name"
                   value={name}
                   onChange={(v) => {
                     setName(v);
@@ -204,23 +204,23 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
                   placeholder="Your name"
                 />
                 <Field
-                  label="Email address"
+                  label="Account Email"
                   value={user.email}
                   disabled
                   rightAdornment={<Mail size={16} />}
-                  hint="Email can’t be changed for this demo."
+                  hint="Connected email address."
                 />
               </div>
             </SettingsSection>
 
             <SettingsSection
-              icon={<Shield size={18} color="#10b981" />}
+              icon={<Shield size={18} />}
               title="Security"
-              subtitle="Change your password (demo only). Leave blank to keep it unchanged."
+              subtitle="Update your authentication credentials."
             >
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <Field
-                  label="Current password"
+                  label="Current Password"
                   type="password"
                   placeholder="••••••••"
                   value={currentPassword}
@@ -232,9 +232,9 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
                   error={passwordError}
                 />
                 <Field
-                  label="New password"
+                  label="New Password"
                   type="password"
-                  placeholder="Enter new password"
+                  placeholder="Choose new password"
                   value={newPassword}
                   onChange={(v) => {
                     setNewPassword(v);
@@ -247,62 +247,61 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
             </SettingsSection>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-            <section className="dash-card glass-effect" style={{ padding: '28px' }}>
-              <div style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: '10px' }}>Changes</div>
-              <div style={{ color: 'var(--text-muted)', lineHeight: 1.7, fontSize: '0.95rem' }}>
-                Review your updates, then save. You can reset anytime before saving.
-              </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            <section className="dash-card" style={{ padding: '32px' }}>
+              <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '12px' }}>Pending Updates</div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '24px' }}>
+                Review your changes carefully before committing to the database.
+              </p>
 
-              <div style={{ marginTop: '18px', padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)', background: 'rgba(255,255,255,0.03)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  <span>Name</span>
-                  <span style={{ color: '#fff', fontWeight: 700, maxWidth: '55%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-secondary)', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '12px' }}>
+                  <span>NAME</span>
+                  <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>
                     {name.trim() || '—'}
                   </span>
                 </div>
-                <div style={{ height: '10px' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  <span>Password</span>
-                  <span style={{ color: '#fff', fontWeight: 700 }}>
-                    {currentPassword || newPassword ? 'Will be updated' : 'Unchanged'}
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  <span>PASSWORD</span>
+                  <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>
+                    {currentPassword || newPassword ? 'Updated' : 'Unchanged'}
                   </span>
                 </div>
               </div>
 
               {error && !nameError && !passwordError && (
-                <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '10px', color: '#ef4444', fontWeight: 700 }}>
-                  <AlertTriangle size={18} /> {error}
+                <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', fontWeight: 600, fontSize: '0.9rem' }}>
+                  <AlertTriangle size={16} /> {error}
                 </div>
               )}
 
-              <div style={{ marginTop: '18px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   type="button"
-                  className="btn-outline"
+                  className="btn-white"
                   onClick={onReset}
                   disabled={!isDirty}
-                  style={{ opacity: !isDirty ? 0.6 : 1, display: 'inline-flex', alignItems: 'center', gap: '10px' }}
+                  style={{ flex: 1, justifyContent: 'center' }}
                 >
                   <RotateCcw size={16} /> Reset
                 </button>
                 <button
                   type="submit"
-                  className="btn-white"
+                  className="btn-black"
                   disabled={!isDirty}
-                  style={{ opacity: !isDirty ? 0.65 : 1, display: 'inline-flex', alignItems: 'center', gap: '10px' }}
+                  style={{ flex: 2, justifyContent: 'center' }}
                 >
-                  <Save size={16} /> Save changes
+                  <Save size={16} /> Save Changes
                 </button>
               </div>
             </section>
 
-            <section className="dash-card" style={{ padding: '24px' }}>
-              <div style={{ fontWeight: 900, marginBottom: '8px' }}>Tip</div>
-              <div style={{ color: 'var(--text-muted)', lineHeight: 1.7, fontSize: '0.95rem' }}>
-                Use a real name—your dashboard greeting and reports use it.
-              </div>
-            </section>
+            <div className="dash-card" style={{ padding: '24px', background: 'transparent', borderStyle: 'dashed' }}>
+              <h4 style={{ fontWeight: 800, marginBottom: '8px' }}>Security Tip</h4>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                Regularly updating your password and using unique credentials for career platforms helps protect your professional data.
+              </p>
+            </div>
           </div>
         </div>
       </form>

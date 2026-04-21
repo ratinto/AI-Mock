@@ -37,25 +37,26 @@ function App() {
             
             {/* Trusted By Section */}
             <div style={{ 
-              padding: '40px 0', 
+              padding: '60px 0', 
               borderBottom: '1px solid var(--border-subtle)',
               textAlign: 'center',
-              color: 'var(--text-secondary)',
-              fontSize: '0.9rem',
-              letterSpacing: '2px',
-              fontWeight: 600,
+              color: 'var(--text-muted)',
+              fontSize: '0.8rem',
+              letterSpacing: '0.15em',
+              fontWeight: 800,
               textTransform: 'uppercase'
             }}>
-              Helping candidates at
+              Trusted by candidates at
               <div style={{ 
                 display: 'flex', 
                 justifyContent: 'center', 
-                gap: '60px', 
-                marginTop: '30px', 
-                filter: 'grayscale(1) brightness(2)',
-                opacity: 0.4,
-                fontSize: '1.5rem',
-                fontWeight: 800
+                gap: '80px', 
+                marginTop: '40px', 
+                filter: 'grayscale(1) contrast(1.2)',
+                opacity: 0.25,
+                fontSize: '1.4rem',
+                fontWeight: 900,
+                letterSpacing: '-1px'
               }}>
                 <span>GOOGLE</span>
                 <span>META</span>
@@ -69,23 +70,41 @@ function App() {
             
             {/* Footer */}
             <footer style={{ 
-              padding: '80px 20px 40px', 
-              textAlign: 'center', 
+              padding: '100px 60px 60px', 
+              textAlign: 'left', 
               borderTop: '1px solid var(--border-subtle)',
-              marginTop: '100px',
-              color: 'var(--text-secondary)',
-              fontSize: '0.9rem'
+              marginTop: '120px',
+              color: 'var(--text-muted)',
+              fontSize: '0.9rem',
+              maxWidth: '1200px',
+              margin: '120px auto 0'
             }}>
-              <div style={{ marginBottom: '32px', fontWeight: 700, fontSize: '1.5rem', color: '#fff' }}>
-                AntriView.
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '40px' }}>
+                <div>
+                  <div style={{ marginBottom: '24px', fontWeight: 900, fontSize: '1.8rem', color: 'var(--text-main)', letterSpacing: '-1.5px' }}>
+                    AntriView.
+                  </div>
+                  <p style={{ maxWidth: '300px', lineHeight: 1.6, marginBottom: '24px' }}>
+                    The premium workspace for focused technical interview preparation.
+                  </p>
+                  <p>© 2026 AntriView AI. All rights reserved.</p>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '80px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ color: 'var(--text-main)', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase' }}>Product</div>
+                    <a href="#" onClick={goToHome} style={{ color: 'inherit', textDecoration: 'none' }}>Home</a>
+                    <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Features</a>
+                    <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Pricing</a>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ color: 'var(--text-main)', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase' }}>Company</div>
+                    <a href="#" onClick={goToAbout} style={{ color: 'inherit', textDecoration: 'none' }}>About Us</a>
+                    <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Support</a>
+                    <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginBottom: '32px' }}>
-                <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</a>
-                <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Service</a>
-                <a href="#" onClick={goToHome} style={{ color: 'inherit', textDecoration: 'none' }}>Home</a>
-                <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Support</a>
-              </div>
-              <p>© 2026 AntriView AI. Powered by Intelligence.</p>
             </footer>
           </main>
         </>

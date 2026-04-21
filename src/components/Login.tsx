@@ -28,85 +28,86 @@ const Login: React.FC<LoginProps> = ({ onBack, onLogin, onSignup }) => {
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
-      padding: '20px'
+      padding: '20px',
+      background: 'var(--bg-secondary)'
     }}>
-      <div className="animate-fade" style={{
+      <div className="dash-card animate-fade" style={{
         width: '100%',
-        maxWidth: '450px',
-        padding: '60px 48px',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: '32px',
-        background: 'rgba(255, 255, 255, 0.02)',
-        backdropFilter: 'blur(10px)',
-        textAlign: 'center'
+        maxWidth: '440px',
+        padding: '48px',
+        textAlign: 'center',
+        background: '#fff'
       }}>
-        <div style={{ marginBottom: '40px' }}>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '12px', letterSpacing: '-1px' }}>Welcome back.</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Sign in to continue your preparation.</p>
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '2.2rem', marginBottom: '8px', fontWeight: 800 }}>Welcome back</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Sign in to your AntriView workspace.</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div style={{ textAlign: 'left' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', marginLeft: '4px' }}>Email Address</label>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</label>
             <input 
               required
               type="email" 
-              placeholder="name@company.com"
+              placeholder="name@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{
                 width: '100%',
-                padding: '14px 20px',
-                borderRadius: '100px',
-                background: 'rgba(255,255,255,0.05)',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                background: '#fff',
                 border: '1px solid var(--border-subtle)',
-                color: '#fff',
+                color: 'var(--text-main)',
                 outline: 'none',
-                fontSize: '1rem'
+                fontSize: '1rem',
+                transition: 'all 0.2s ease'
               }} 
             />
           </div>
 
-          <div style={{ textAlign: 'left', marginBottom: '10px' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', marginLeft: '4px' }}>Password</label>
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password</label>
             <input 
               required
               type="password" 
               placeholder="••••••••"
               style={{
                 width: '100%',
-                padding: '14px 20px',
-                borderRadius: '100px',
-                background: 'rgba(255,255,255,0.05)',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                background: '#fff',
                 border: '1px solid var(--border-subtle)',
-                color: '#fff',
+                color: 'var(--text-main)',
                 outline: 'none',
-                fontSize: '1rem'
+                fontSize: '1rem',
+                transition: 'all 0.2s ease'
               }} 
             />
           </div>
 
-          <button type="submit" className="btn-white" style={{ width: '100%', justifyContent: 'center', height: '54px' }}>
+          <button type="submit" className="btn-black" style={{ width: '100%', justifyContent: 'center', height: '48px', marginTop: '8px' }}>
             Sign In
           </button>
         </form>
 
-        <div style={{ marginTop: '32px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          Don't have an account? <a href="#" onClick={(e) => { e.preventDefault(); onSignup(); }} style={{ color: '#fff', textDecoration: 'none', fontWeight: 600 }}>Create one</a>
+        <div style={{ marginTop: '32px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          Don't have an account? <a href="#" onClick={(e) => { e.preventDefault(); onSignup(); }} style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 700 }}>Create one</a>
         </div>
 
         <button 
           onClick={onBack}
           style={{
-            marginTop: '40px',
+            marginTop: '32px',
             background: 'none',
             border: 'none',
-            color: 'var(--text-secondary)',
+            color: 'var(--text-muted)',
             cursor: 'pointer',
             fontSize: '0.9rem',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '8px',
+            fontWeight: 500
           }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

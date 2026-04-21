@@ -1,39 +1,38 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Mic, MicOff, Clock, ChevronRight, Code, Palette, Sparkles } from 'lucide-react';
+import { Mic, MicOff, Clock, ChevronRight, Code, Palette, Sparkles, Video, CornerDownLeft } from 'lucide-react';
 import { useServices } from '../app/ServicesProvider';
 import { getSelectedPersona } from './PersonaLab';
 
-// Pure CSS Animated AI Orb (Premium Aesthetic)
-const AIInterviewerOrb = ({ color = '#3b82f6' }: { color?: string }) => (
+// Pure CSS Animated AI Orb (Premium Monochrome Aesthetic)
+const AIInterviewerOrb = () => (
   <div style={{ 
-    width: '180px', 
-    height: '180px', 
+    width: '200px', 
+    height: '200px', 
     borderRadius: '50%', 
-    background: `radial-gradient(circle at 30% 30%, #ffffff, ${color})`,
-    boxShadow: `0 0 60px ${color}66, inset 0 0 40px rgba(255, 255, 255, 0.4)`,
+    background: `radial-gradient(circle at 30% 30%, #fff, #333)`,
+    boxShadow: `0 30px 60px rgba(0,0,0,0.2), inset 0 0 40px rgba(255, 255, 255, 0.5)`,
     position: 'relative',
-    animation: 'orbFloat 4s ease-in-out infinite, orbPulse 2s ease-in-out infinite',
-    filter: 'blur(1px)'
+    animation: 'orbFloat 5s ease-in-out infinite',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '1px solid rgba(0,0,0,0.1)'
   }}>
     <div style={{ 
-      position: 'absolute', 
-      top: '20%', 
-      left: '20%', 
-      width: '30%', 
-      height: '30%', 
-      background: 'white', 
-      borderRadius: '50%', 
-      filter: 'blur(8px)',
-      opacity: 0.6
+      width: '80%',
+      height: '80%',
+      borderRadius: '50%',
+      border: '1px solid rgba(255,255,255,0.4)',
+      animation: 'orbPulse 3s ease-in-out infinite'
     }} />
     <style>{`
       @keyframes orbFloat {
-        0%, 100% { transform: translateY(0) scale(1.05); }
-        50% { transform: translateY(-20px) scale(0.95); }
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-15px) scale(1.02); }
       }
       @keyframes orbPulse {
-        0%, 100% { box-shadow: 0 0 60px ${color}66; }
-        50% { box-shadow: 0 0 100px ${color}99; }
+        0%, 100% { transform: scale(1); opacity: 0.3; }
+        50% { transform: scale(1.1); opacity: 0.6; }
       }
     `}</style>
   </div>
@@ -43,17 +42,14 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [timer, setTimer] = useState(300); // 5 minutes in seconds
+  const [timer, setTimer] = useState(300); 
   const [showEditor, setShowEditor] = useState(false);
   const { auth, sessions } = useServices();
   
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Get the selected persona
   const persona = useMemo(() => getSelectedPersona(), []);
-  const personaName = persona?.name ?? 'AI Interviewer';
-  const personaColor = persona?.color ?? '#3b82f6';
-  const personaRole = persona?.role ?? 'Technical Interviewer';
+  const personaName = persona?.name ?? 'AI Evaluator';
 
   const questions = [
     {
@@ -70,7 +66,6 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
     }
   ];
 
-  // Webcam Setup
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ video: true })
@@ -81,7 +76,6 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
     }
   }, []);
 
-  // Timer logic
   useEffect(() => {
     const interval = setInterval(() => {
       setTimer(t => (t > 0 ? t - 1 : 0));
@@ -97,18 +91,17 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
 
   const startSTT = () => {
     setIsRecording(true);
-    // In a real app, use Web Speech API here
     setTimeout(() => {
-      setTranscript("In my previous role at Google, I used gRPC for synchronous communication and RabbitMQ for asynchronous tasks to ensure decoupling...");
+      setTranscript("In my previous role, I optimized inter-service latency by implementing a gRPC-based communication layer with a fallback to RabbitMQ for asynchronous reliability...");
       setIsRecording(false);
-    }, 3000);
+    }, 2500);
   };
 
   return (
-    <div className="animate-fade" style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '32px', height: 'calc(100vh - 120px)' }}>
-      {/* Left Panel: Webcam & Interviewer */}
+    <div className="animate-fade" style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '40px', height: 'calc(100vh - 140px)' }}>
+      {/* Left Panel: Monitoring */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-        <div style={{ position: 'relative', height: '260px', borderRadius: '32px', overflow: 'hidden', background: '#000', border: '1px solid var(--border-subtle)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+        <div style={{ position: 'relative', height: '280px', borderRadius: '24px', overflow: 'hidden', background: '#000', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-lg)' }}>
           <video 
             ref={videoRef} 
             autoPlay 
@@ -116,131 +109,119 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
             playsInline 
             style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} 
           />
-          <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.6)', padding: '6px 14px', borderRadius: '100px', fontSize: '0.7rem', backdropFilter: 'blur(8px)', fontWeight: 700, letterSpacing: '1px' }}>
-             <div className="circle-online"></div> REC LIVE
+          <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.8)', padding: '6px 14px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.05em', color: '#fff' }}>
+             <div className="circle-online" style={{ background: '#ef4444' }}></div> LIVE FEED
           </div>
         </div>
 
-        <div style={{ flexGrow: 1, borderRadius: '32px', background: 'rgba(255,255,255,0.02)', border: `1px solid ${personaColor}25`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '40px' }}>
-          <AIInterviewerOrb color={personaColor} />
-          <div style={{ marginTop: '40px', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: personaColor, background: `${personaColor}18`, padding: '6px 16px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '1px', marginBottom: '12px' }}>
-              <Sparkles size={14} /> {persona ? personaName.toUpperCase() : 'AI ENGINE ACTIVE'}
+        <div className="dash-card" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: '48px', textAlign: 'center' }}>
+          <AIInterviewerOrb />
+          <div style={{ marginTop: '40px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', background: 'var(--bg-secondary)', padding: '8px 20px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px' }}>
+              <Sparkles size={14} /> {personaName}
             </div>
-            <p style={{ fontWeight: 600, fontSize: '1.1rem' }}>
-              {persona ? `${personaName} is listening...` : 'Listening to your response...'}
-            </p>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
-              {persona ? personaRole : 'Press Mic to start speaking'}
+            <h3 style={{ fontWeight: 800, fontSize: '1.25rem', marginBottom: '8px' }}>
+              {isRecording ? 'Interviewer is listening...' : 'Response analysis active'}
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+              AntriView AI Engine is processing your speech intent and keywords.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Right Panel: Question & Input */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div className="dash-card" style={{ flexGrow: 1, position: 'relative', display: 'flex', flexDirection: 'column', padding: '40px' }}>
+      {/* Right Panel: Content */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div className="dash-card" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', padding: '48px', position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ padding: '8px 16px', background: `${personaColor}18`, color: personaColor, borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800 }}>QUESTION {currentQuestion + 1} OF 3</span>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>{questions[currentQuestion].type} Round</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span style={{ padding: '8px 16px', background: 'var(--text-main)', color: '#fff', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 900 }}>Q{currentQuestion + 1}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{questions[currentQuestion].type} FOCUS</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: timer < 60 ? '#ef4444' : '#fff', fontWeight: 800, fontSize: '1.1rem', background: 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: '12px' }}>
-              <Clock size={20} /> {formatTime(timer)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: timer < 60 ? '#ef4444' : 'var(--text-main)', fontWeight: 800, fontSize: '1.25rem', padding: '8px 20px', background: 'var(--bg-secondary)', borderRadius: '12px' }}>
+              <Clock size={22} /> {formatTime(timer)}
             </div>
           </div>
 
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, lineHeight: '1.35', marginBottom: '40px', letterSpacing: '-0.5px' }}>
+          <h2 style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1.2, marginBottom: '48px', letterSpacing: '-1.5px' }}>
             {questions[currentQuestion].text}
           </h2>
 
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
-            <button className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px' }} onClick={() => setShowEditor(!showEditor)}>
-              <Code size={18} /> {showEditor ? 'Hide Editor' : 'Open IDE'}
-            </button>
-            <button className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px' }}>
-              <Palette size={18} /> Whiteboard
-            </button>
-          </div>
-
-          {showEditor && (
-             <div style={{ flexGrow: 1, background: '#0a0a0a', borderRadius: '20px', padding: '24px', border: '1px solid var(--border-subtle)', fontFamily: '"Fira Code", monospace', color: '#d4d4d4', marginBottom: '32px', fontSize: '0.95rem', lineHeight: '1.6', overflow: 'auto' }}>
-               <span style={{ color: '#6a9955' }}>// Implement your solution below</span><br/>
-               <span style={{ color: '#569cd6' }}>function</span> <span style={{ color: '#dcdcaa' }}>solveInterviewQuestion</span>() {'{'}<br/>
-               &nbsp;&nbsp;<span style={{ color: '#6a9955' }}>/* Logic here */</span><br/>
-               &nbsp;&nbsp;<span style={{ color: '#c586c0' }}>return</span> <span style={{ color: '#ce9178' }}>"optimal approach"</span>;<br/>
-               {'}'}
-             </div>
+          {showEditor ? (
+            <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+               <div style={{ flexGrow: 1, background: '#000', borderRadius: '20px', padding: '32px', color: '#fff', fontFamily: 'monospace', fontSize: '1rem', lineHeight: 1.6, overflow: 'auto', border: '1px solid var(--border-subtle)' }}>
+                  <span style={{ opacity: 0.4 }}>// Technical implementation workspace</span><br/>
+                  <span style={{ color: '#569cd6' }}>async function</span> <span style={{ color: '#dcdcaa' }}>evaluateSolution</span>() {'{'}<br/>
+                  &nbsp;&nbsp;<span style={{ opacity: 0.4 }}>/* Write your logic here */</span><br/>
+                  {'}'}
+               </div>
+               <button className="btn-white" onClick={() => setShowEditor(false)} style={{ width: 'fit-content' }}>Close IDE</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '48px' }}>
+              <button className="btn-white" onClick={() => setShowEditor(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Code size={18} /> Open Source Editor
+              </button>
+              <button className="btn-white" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Palette size={18} /> Digital Whiteboard
+              </button>
+            </div>
           )}
 
-          <div style={{ marginTop: 'auto' }}>
-            <div style={{ position: 'relative' }}>
-              <textarea 
-                placeholder="Type your answer or use voice input..." 
-                value={transcript}
-                onChange={(e) => setTranscript(e.target.value)}
+          <div style={{ marginTop: 'auto', position: 'relative' }}>
+            <textarea 
+              placeholder="Your response will appear here as you speak..." 
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              style={{ 
+                width: '100%', 
+                height: '160px', 
+                background: 'var(--bg-secondary)', 
+                border: '1px solid var(--border-subtle)', 
+                borderRadius: '24px', 
+                padding: '32px', 
+                color: 'var(--text-main)', 
+                resize: 'none',
+                fontSize: '1.2rem',
+                outline: 'none',
+                lineHeight: 1.6,
+                fontWeight: 500,
+                transition: 'all 0.2s ease'
+              }}
+            />
+            <div style={{ position: 'absolute', right: '16px', bottom: '16px', display: 'flex', gap: '12px' }}>
+               <button 
+                onClick={startSTT}
                 style={{ 
-                  width: '100%', 
-                  height: '140px', 
-                  background: 'rgba(255,255,255,0.02)', 
-                  border: '1px solid var(--border-subtle)', 
-                  borderRadius: '24px', 
-                  padding: '24px', 
+                  width: '64px', 
+                  height: '64px', 
+                  borderRadius: '20px', 
+                  background: isRecording ? '#000' : 'var(--text-main)', 
+                  border: 'none', 
                   color: '#fff', 
-                  resize: 'none',
-                  fontSize: '1.1rem',
-                  outline: 'none',
-                  transition: '0.3s',
-                  lineHeight: '1.6'
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: 'var(--shadow-md)'
+                }}>
+                 {isRecording ? <div style={{ width: '20px', height: '20px', background: '#ef4444', borderRadius: '4px' }} /> : <Mic size={24} />}
+               </button>
+               <button 
+                className="btn-black" 
+                style={{ padding: '0 40px', height: '64px', borderRadius: '20px', fontSize: '1.1rem' }}
+                onClick={() => {
+                  if (currentQuestion < questions.length - 1) {
+                    setCurrentQuestion(c => c + 1);
+                    setTranscript("");
+                  } else {
+                    onEnd({});
+                  }
                 }}
-              />
-              <div style={{ position: 'absolute', right: '16px', bottom: '16px', display: 'flex', gap: '12px' }}>
-                 <button 
-                  onClick={startSTT}
-                  style={{ 
-                    width: '56px', 
-                    height: '56px', 
-                    borderRadius: '16px', 
-                    background: isRecording ? '#ef4444' : 'rgba(255,255,255,0.08)', 
-                    border: 'none', 
-                    color: '#fff', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: '0.3s',
-                    boxShadow: isRecording ? '0 0 20px rgba(239, 68, 68, 0.4)' : 'none'
-                  }}>
-                   {isRecording ? <MicOff size={24} /> : <Mic size={24} />}
-                 </button>
-                 <button 
-                  className="btn-white" 
-                  style={{ padding: '0 28px', height: '56px', borderRadius: '16px', fontSize: '1rem', fontWeight: 700 }}
-                  onClick={() => {
-                    if (currentQuestion < questions.length - 1) {
-                      setCurrentQuestion(c => c + 1);
-                      setTranscript("");
-                    } else {
-                      const user = auth.getCurrentUser();
-                      if (user) {
-                        const scores = ['A', 'A-', 'B+', 'B', 'B-'];
-                        const randomScore = scores[Math.floor(Math.random() * scores.length)];
-                        
-                        sessions.addSession(user.email, {
-                          id: Date.now().toString(),
-                          role: role,
-                          date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-                          score: randomScore,
-                          type: questions[0].type // Use the first question type for simplicity
-                        }, track);
-                      }
-                      onEnd({});
-                    }
-                  }}
-                 >
-                   {currentQuestion === questions.length - 1 ? 'Finish Interview' : 'Next Question'} <ChevronRight size={20} />
-                 </button>
-              </div>
+               >
+                 {currentQuestion === questions.length - 1 ? 'Finish Session' : 'Continue'} <ChevronRight size={22} />
+               </button>
             </div>
           </div>
         </div>

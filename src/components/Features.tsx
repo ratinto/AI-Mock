@@ -9,9 +9,9 @@ const FeatureItem = ({ number, title, description }: { number: string, title: st
     gap: '40px',
     textAlign: 'left'
   }}>
-    <div style={{ color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: 600 }}>{number}</div>
+    <div style={{ color: 'var(--text-muted)', fontSize: '1rem', fontWeight: 600 }}>{number}</div>
     <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{title}</div>
-    <div style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: 1.6 }}>{description}</div>
+    <div style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: 1.6 }}>{description}</div>
   </div>
 );
 
@@ -20,7 +20,7 @@ const Features: React.FC = () => {
     <section id="features" style={{ padding: '100px 60px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ marginBottom: '80px', textAlign: 'left' }}>
         <h2 style={{ fontSize: '3rem', fontWeight: 800, marginBottom: '20px' }}>Our Approach.</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.25rem', maxWidth: '500px' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', maxWidth: '500px' }}>
           We combine advanced AI with career psychology to give you a competitive edge.
         </p>
       </div>

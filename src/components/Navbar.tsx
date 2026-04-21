@@ -9,34 +9,24 @@ const Navbar: React.FC<NavbarProps> = ({ onStart, onAbout }) => {
   return (
     <nav style={{
       width: '100%',
-      padding: '30px 60px',
+      padding: '24px 60px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       position: 'absolute',
       top: 0,
       left: 0,
-      zIndex: 100
+      zIndex: 100,
+      background: 'transparent'
     }}>
       {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.25rem', fontWeight: 700 }}>
-        <div style={{ 
-          width: '32px', 
-          height: '32px', 
-          borderRadius: '50%', 
-          background: 'linear-gradient(135deg, #fff, #888)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#000',
-          fontSize: '0.9rem'
-        }}>A</div>
-        AntriView
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-1.5px', color: '#000' }}>
+        AntriView.
       </div>
 
       {/* Center/Right Links */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
-        <div style={{ display: 'flex', gap: '30px', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>
+        <div style={{ display: 'flex', gap: '30px', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>
           <a
             href="#"
             onClick={(e) => {
@@ -45,16 +35,18 @@ const Navbar: React.FC<NavbarProps> = ({ onStart, onAbout }) => {
             }}
             style={{ color: 'inherit', textDecoration: 'none' }}
           >
-            About Us
+            Resources
           </a>
+          <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Pricing</a>
+          <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Solutions</a>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <a href="#" onClick={onStart} style={{ color: '#fff', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500 }}>Sign In</a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <a href="#" onClick={onStart} style={{ color: 'var(--text-main)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}>Sign In</a>
           <button 
-            className="btn-outline" 
+            className="btn-black" 
             onClick={onStart}
-            style={{ padding: '8px 24px', fontSize: '0.9rem' }}
+            style={{ padding: '10px 24px', fontSize: '0.9rem' }}
           >
             Get Started
           </button>
