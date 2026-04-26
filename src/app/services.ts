@@ -1,5 +1,8 @@
 import type { HistoryItem, UserData } from '../domain/user';
 import { api, clearAuthStorage, getStoredUser } from '../lib/api';
+import { createFeedbackUseCases } from '../application/useCases/feedback';
+import { LocalStorageFeedbackRepository } from '../infrastructure/repositories/localStorageFeedbackRepository';
+import { browserLocalStorage } from '../infrastructure/storage/browserStorage';
 
 export function createServices() {
   const auth = {
@@ -45,7 +48,15 @@ export function createServices() {
     },
   };
 
-  return { auth, sessions, profile } as const;
+  // --- Feedback Module (Clean Architecture composition) ---
+  // Repository: concrete localStorage implementation
+  const feedbackRepo = new LocalStorageFeedbackRepository(browserLocalStorage, {
+    storageKey: 'antriview_feedback',
+  });
+  // Use Cases: business logic, depends on the repository PORT (interface)
+  const feedback = createFeedbackUseCases({ feedbackRepo });
+
+  return { auth, sessions, profile, feedback } as const;
 }
 
 export type Services = ReturnType<typeof createServices>;
