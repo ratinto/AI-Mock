@@ -13,45 +13,26 @@ import {
   BookOpen,
   Briefcase,
   Code,
-  Award,
   Users,
   Clock,
-  ChevronRight,
   Layers,
-  Zap,
-  MoreHorizontal,
-  Pen,
-  Camera,
-  Monitor,
-  Layout,
   Cpu,
   Terminal,
-  Filter,
-  Check,
-  Eye,
   Type,
   X,
   ShieldCheck,
   AlertCircle,
-  Globe,
   Upload,
-  BarChart3,
   Search,
   Bold,
   Italic,
   List,
-  ListOrdered,
   Image as ImageIcon,
   Table,
   Undo2,
   Redo2,
-  Maximize2,
-  Settings,
-  ChevronDown,
   FileCode,
-  FileSearch,
-  RefreshCcw,
-  Share2
+  RefreshCcw
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import html2canvas from 'html2canvas';
@@ -73,8 +54,8 @@ interface ResumeFeedback {
 const INITIAL_RESUME_DATA: ResumeStructuredData = {
   title: '',
   target_role: '',
-  general: { name: '', email: '', phone: '', summary: '', photo_url: '', nationality: '' },
-  socialLinks: { github: '', linkedin: '', portfolio: '', leetcode: '', hackerrank: '', codechef: '', codeforces: '' },
+  general: { name: '', email: '', phone: '', summary: '' },
+  socialLinks: { github: '', linkedin: '', portfolio: '' },
   education: [],
   experience: [],
   projects: [],
@@ -101,10 +82,10 @@ const ResumeAI: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [compilingLatex, setCompilingLatex] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [activeSectionId, setActiveSectionId] = useState<string>('general');
   const [showNewModal, setShowNewModal] = useState(false);
   const [newResumeInfo, setNewResumeInfo] = useState({ title: '', role: '' });
-  const [compileStatus, setCompileStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [feedback, setFeedback] = useState<ResumeFeedback | null>(null);
   const [compiledPdfUrl, setCompiledPdfUrl] = useState<string | null>(null);
   
@@ -131,6 +112,14 @@ const ResumeAI: React.FC = () => {
       }
       setView('editor');
     } catch (err) { console.error(err); } finally { setLoading(false); }
+  };
+
+  const handleDeleteResume = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.deleteResume(id);
+      setResumes(resumes.filter(r => r.id !== id));
+    } catch (err) { console.error(err); }
   };
 
   const handleOpenAnalysis = async (resume: Resume) => {
@@ -180,26 +169,21 @@ const ResumeAI: React.FC = () => {
   const handleRecompile = async () => {
     if (!activeResume?.latex_code) return;
     setCompilingLatex(true);
-    setCompileStatus('idle');
     try {
       // In Visual Mode: Parse LaTeX to JSON. In Code Mode: Compile true PDF.
       if (editorMode === 'form') {
          const result = await api.parseLatex(activeResume.latex_code);
          if (result && result.data) {
             setActiveResume(prev => prev ? { ...prev, data: result.data } : null);
-            setCompileStatus('success');
          }
       } else {
          // Generate true PDF url for iframe
          const encodedLatex = encodeURIComponent(activeResume.latex_code);
          const pdfUrl = `https://latexonline.cc/compile?text=${encodedLatex}&force=true`;
          setCompiledPdfUrl(pdfUrl);
-         setCompileStatus('success');
       }
-      setTimeout(() => setCompileStatus('idle'), 2000);
     } catch (err) { 
       console.error(err); 
-      setCompileStatus('error');
     } finally { setCompilingLatex(false); }
   };
 
@@ -310,7 +294,7 @@ const ResumeAI: React.FC = () => {
                          <h3>{r.title}</h3>
                          <p>{r.target_role}</p>
                          <div className="c-footer">
-                            <Clock size={12} /> {new Date(r.updated_at).toLocaleDateString()}
+                            <Clock size={12} /> {r.created_at ? new Date(r.created_at).toLocaleDateString() : 'N/A'}
                          </div>
                       </div>
                     ))}
