@@ -23,7 +23,7 @@
  * @see ../../domain/ports/userRepository.ts
  */
 
-import { api, getStoredUser } from '../../lib/api';
+import { getStoredUser } from '../../lib/api';
 import type { UserRepository } from '../../domain/ports/userRepository';
 import type { UserData } from '../../domain/user';
 
