@@ -1,0 +1,344 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{svg}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{caption}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue
+}
+
+\title{\textbf{System Design Document}\\AntriView AI}
+\author{Rishiwant Kumar Maurya}
+\date{April 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ------------------------------------------------------------
+\section{Introduction}
+
+\subsection{Overview of the System}
+AntriView AI is a premium, UI-first mock interview preparation platform built as a single-page web application.
+It provides a guided interview flow (setup \(\rightarrow\) timed questions \(\rightarrow\) session report), a progress dashboard, and supporting tools such as persona selection, resume analysis (demo), and account settings.
+
+\subsection{Problem Statement}
+Interview preparation is often fragmented across multiple tools (question banks, timers, notes, and feedback templates).
+Candidates struggle to maintain consistency, measure improvement, and practice in conditions that resemble real interviews.
+
+\subsection{Objectives of the System}
+\begin{itemize}[leftmargin=1.2em]
+  \item Provide an end-to-end mock interview experience: configure a session, practice, and review outcomes.
+  \item Track progress over time (sessions, skill scores, and history) in a user-centric dashboard.
+  \item Maintain a clean architecture structure (domain/application/infrastructure/presentation) suitable for academic/portfolio use.
+  \item Keep the system lightweight and easy to run locally using a modern frontend toolchain.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{System Architecture}
+
+\subsection{High-level Architecture}
+The system is a client-side application structured into layered modules:
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Presentation Layer (UI)}: React components in \texttt{src/components/} render pages and user interactions.
+  \item \textbf{Application Layer (Use Cases)}: business logic in \texttt{src/application/useCases/} (auth, sessions, profile).
+  \item \textbf{Domain Layer (Entities/Ports)}: core types and interfaces in \texttt{src/domain/}.
+  \item \textbf{Infrastructure Layer (Repositories/Storage)}: localStorage/sessionStorage adapters in \texttt{src/infrastructure/}.
+  \item \textbf{Composition / DI Container}: \texttt{src/app/services.ts} wires dependencies; \texttt{ServicesProvider} exposes them via React Context.
+\end{itemize}
+
+\subsection{Frontend, Backend, Database, External Services}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Frontend}: React 19 + TypeScript, bundled with Vite; UI uses CSS variables + glassmorphism styling and Lucide icons.
+  \item \textbf{Backend}: Not present in the current version. ``AI'' behavior is simulated in the UI; \texttt{src/lib/gemini.ts} is a placeholder for future secure integration.
+  \item \textbf{Database}: Browser storage.
+  \begin{itemize}[leftmargin=1.2em]
+    \item \textbf{User DB}: JSON stored in localStorage key \texttt{antriview\_user\_db}.
+    \item \textbf{Session}: current user email + view state stored in sessionStorage keys \texttt{antriview\_current\_user}, \texttt{antriview\_view}, \texttt{antriview\_dash\_view}.
+  \end{itemize}
+  \item \textbf{External Services / Browser APIs}:
+  \begin{itemize}[leftmargin=1.2em]
+    \item MediaDevices API for webcam preview (\texttt{getUserMedia}) in the interview room.
+    \item Web Speech API capability exists as a utility (\texttt{src/lib/speech.ts}); the interview transcript is currently simulated.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Component Interaction}
+\begin{itemize}[leftmargin=1.2em]
+  \item UI components call \textbf{use cases} via \texttt{useServices()}.
+  \item Use cases operate on \textbf{ports} (\texttt{UserRepository}, \texttt{SessionRepository}).
+  \item Infrastructure repositories persist data to browser storage (localStorage/sessionStorage).
+  \item The \texttt{Dashboard} orchestrates navigation between internal views (overview, setup, interview, report, etc.).
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Design Principles Used}
+
+\subsection{SOLID Principles}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Single Responsibility}: Use cases focus on one domain action (e.g., \texttt{createAuthUseCases}, \texttt{createSessionUseCases}, \texttt{createUserProfileUseCases}).
+  \item \textbf{Open/Closed}: Repositories are behind interfaces (ports). Alternate implementations (e.g., server-backed repositories) can be introduced without rewriting use cases.
+  \item \textbf{Liskov Substitution}: Any implementation of \texttt{UserRepository} can replace \texttt{LocalStorageUserRepository}.
+  \item \textbf{Interface Segregation}: Ports are small and specific (\texttt{UserRepository}, \texttt{SessionRepository}).
+  \item \textbf{Dependency Inversion}: The application layer depends on abstractions (ports), not storage details.
+\end{itemize}
+
+\subsection{DRY (Don't Repeat Yourself)}
+Shared logic is centralized (e.g., \texttt{createCache} + \texttt{useApiCache}, reusable UI patterns such as modular settings fields in \texttt{Profile.tsx}).
+
+\subsection{KISS (Keep It Simple, Stupid)}
+The system uses straightforward state-based navigation and local persistence. This reduces operational complexity and makes the project easy to run and evaluate.
+
+\subsection{Separation of Concerns}
+\begin{itemize}[leftmargin=1.2em]
+  \item UI rendering and interaction live in \texttt{src/components/}.
+  \item Business rules live in \texttt{src/application/}.
+  \item Storage details live in \texttt{src/infrastructure/}.
+\end{itemize}
+
+\subsection{Scalability \& Maintainability}
+\begin{itemize}[leftmargin=1.2em]
+  \item Clear layering allows adding a backend later (REST/GraphQL) while keeping domain and use cases stable.
+  \item Repository pattern enables switching from browser storage to a database-backed persistence model.
+  \item Typed domain models (\texttt{UserData}) reduce runtime errors and improve refactor safety.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Design Patterns Used}
+
+\subsection{Dependency Injection (DI)}
+Services are constructed once in \texttt{createServices()} and provided through React Context (\texttt{ServicesProvider}).
+This separates construction from usage and makes it easy to swap implementations.
+
+\subsection{Repository Pattern}
+\texttt{UserRepository} and \texttt{SessionRepository} define the storage contract. Concrete repositories
+(\texttt{LocalStorageUserRepository}, \texttt{SessionStorageSessionRepository}) implement browser persistence.
+
+\subsection{Factory / Composition Root}
+\texttt{createServices()} acts as a factory/composition root that assembles repositories and use cases.
+
+\subsection{Observer / Reactive UI (React)}
+React's state and hooks provide reactive updates. For example, dashboard views change based on local UI state and session storage values.
+
+\subsection{MVC / MVVM (Relevance Note)}
+The app is primarily a React SPA with component-driven UI rather than classic MVC. The closest mapping is:
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{View}: React components
+  \item \textbf{ViewModel/Controller}: Component state + handlers; use cases act as application controllers
+  \item \textbf{Model}: \texttt{UserData} and stored session/history data
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{System Components Breakdown}
+
+\subsection{Core Modules}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{\texttt{src/components/Dashboard.tsx}}: Main authenticated shell. Sidebar navigation and orchestration of feature views.
+  \item \textbf{\texttt{src/components/InterviewSetup.tsx}}: Collects configuration (role, difficulty, type) and starts a session.
+  \item \textbf{\texttt{src/components/InterviewRoom.tsx}}: Timed interview experience with webcam preview and simulated transcript generation.
+  \item \textbf{\texttt{src/components/Report.tsx}}: Displays session report with metrics and comparison blocks.
+  \item \textbf{\texttt{src/components/History.tsx}}: Lists past sessions from user history and renders progress indicators.
+  \item \textbf{\texttt{src/components/PersonaLab.tsx}}: Persona selection UI (interviewer styles).
+  \item \textbf{\texttt{src/components/ResumeAI.tsx}}: Resume analysis demo UI; gated behind file upload and analysis action.
+  \item \textbf{\texttt{src/components/Profile.tsx}}: Account settings (modular fields, validation, save/reset actions).
+  \item \textbf{\texttt{src/components/AboutUs.tsx}}: About page (also accessible from dashboard sidebar).
+\end{itemize}
+
+\subsection{Application Use Cases}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Auth} (\texttt{src/application/useCases/auth.ts}): login, signup, get current user, logout.
+  \item \textbf{Sessions} (\texttt{src/application/useCases/sessions.ts}): adds a session record, increments stats and skill scores.
+  \item \textbf{User Profile} (\texttt{src/application/useCases/userProfile.ts}): updates user fields (name/password in demo).
+\end{itemize}
+
+\subsection{Infrastructure}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Storage adapters} (\texttt{browserStorage.ts}): typed wrappers over localStorage/sessionStorage.
+  \item \textbf{Repositories}: LocalStorage user repository and SessionStorage session repository.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Database Design}
+
+\subsection{Type of Database Used}
+This project uses \textbf{browser key-value storage} as persistence:
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{localStorage} as a persistent user database.
+  \item \textbf{sessionStorage} for session identity and navigation state.
+\end{itemize}
+
+\subsection{Schema Overview (Conceptual)}
+The main persisted structure is a JSON object keyed by user email:
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{User} (\texttt{UserData}): \texttt{email}, \texttt{name}, optional \texttt{password}, \texttt{stats}, \texttt{history}, \texttt{streak}, \texttt{skills}.
+  \item \textbf{HistoryItem}: \texttt{id}, \texttt{role}, \texttt{date}, \texttt{score}, \texttt{type}.
+\end{itemize}
+
+\subsection{Relationships and Key Decisions}
+\begin{itemize}[leftmargin=1.2em]
+  \item A user has many history items (stored as an array inside the user record).
+  \item Stats are embedded for fast reads on the dashboard (no joins in a key-value store).
+  \item This design is suitable for demos and offline-first UX; a production system should migrate to a server database.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{API Design}
+
+\subsection{Current ``API'' (In-Process Service Calls)}
+There is no HTTP API in the current version. The UI calls in-process use cases via a Services context:
+\begin{itemize}[leftmargin=1.2em]
+  \item \texttt{auth.signup(email, name)}
+  \item \texttt{auth.loginByEmail(email)}
+  \item \texttt{auth.getCurrentUser()}
+  \item \texttt{sessions.addSession(email, historyItem, track)}
+  \item \texttt{profile.updateUser(email, updates)}
+\end{itemize}
+
+\subsection{Authentication / Authorization Strategy}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Current}: session identity is a stored email in sessionStorage.
+  \item \textbf{Production-ready direction}: replace with token-based auth (JWT or opaque session id) managed by a backend, enforce authorization server-side, and avoid storing sensitive tokens in localStorage.
+\end{itemize}
+
+\subsection{Proposed REST Endpoints (Future Backend)}
+For scalability, a future backend could expose endpoints such as:
+\begin{itemize}[leftmargin=1.2em]
+  \item \texttt{POST /auth/signup}, \texttt{POST /auth/login}, \texttt{POST /auth/logout}
+  \item \texttt{GET /users/me}, \texttt{PATCH /users/me}
+  \item \texttt{POST /sessions}, \texttt{GET /sessions}
+  \item \texttt{POST /resume/analyze}
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Scalability \& Performance Considerations}
+
+\subsection{Load Handling}
+The current app is client-only; performance mainly depends on browser rendering and local data size. For production:
+\begin{itemize}[leftmargin=1.2em]
+  \item Add backend services for AI generation, resume parsing, analytics computation.
+  \item Use CDN for static assets; implement pagination for history.
+\end{itemize}
+
+\subsection{Caching}
+The project includes a simple TTL cache (\texttt{src/lib/cache.ts}) and a hook wrapper (\texttt{src/hooks/useApiCache.ts}) suitable for caching API calls in a future backend version.
+
+\subsection{Async Processing}
+Current ``analysis'' tasks are simulated with timers. In a real system:
+\begin{itemize}[leftmargin=1.2em]
+  \item Resume analysis should run asynchronously (job queue) due to CPU/LLM latency.
+  \item Websocket/SSE updates can provide real-time progress feedback.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Security Considerations}
+
+\subsection{Authentication}
+Current implementation uses sessionStorage for the logged-in email. This is adequate for a demo but not for production.
+
+\subsection{Data Protection}
+\begin{itemize}[leftmargin=1.2em]
+  \item Avoid storing secrets (API keys) in the frontend. \texttt{geminiGenerateText} explicitly notes the need for a backend proxy.
+  \item Treat user-provided inputs as untrusted; validate and sanitize on the server in a production version.
+\end{itemize}
+
+\subsection{Common Vulnerabilities (Notes)}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{XSS}: React escapes strings by default; still avoid injecting HTML from untrusted sources.
+  \item \textbf{Sensitive storage}: do not store real passwords in localStorage for production; use hashed passwords server-side.
+  \item \textbf{Permissions}: webcam access is user-approved; handle permission denial gracefully.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Diagrams Explanation}
+
+\subsection{Class Diagram (\texttt{diagrams/Class\_diagram.png})}
+\textbf{Purpose}: Illustrates the primary classes/modules and their relationships, especially around user/session data and core features.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{diagrams/Class_diagram.png}
+  \caption{Class diagram showing core modules and relationships.}
+\end{figure}
+
+\subsection{Use Case Diagram (\texttt{diagrams/uml\_use\_case\_diagram.svg})}
+\textbf{Purpose}: Captures functional interactions between the \textit{User} and the \textit{AI Mock Interview System}.
+
+\textbf{Build note}: This diagram is stored as SVG. To compile this document with the diagram embedded, LaTeX typically requires \texttt{--shell-escape} and an SVG conversion tool (e.g., Inkscape). If your toolchain cannot render SVGs, export the SVG to PNG/PDF and update the include command.
+
+\begin{figure}[h]
+  \centering
+  \includesvg[width=\linewidth]{diagrams/uml_use_case_diagram}
+  \caption{Use case diagram: user and AI system interactions.}
+\end{figure}
+
+\subsection{Activity Diagram (\texttt{diagrams/uml\_activity\_diagram.png})}
+\textbf{Purpose}: Shows the end-to-end control flow for interview setup, interview execution, and post-session reporting.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{diagrams/uml_activity_diagram.png}
+  \caption{Activity flow for the interview process.}
+\end{figure}
+
+\subsection{Sequence Diagram (\texttt{diagrams/uml\_sequence\_diagram (1).png})}
+\textbf{Purpose}: Visualizes time-ordered interactions (UI \(\rightarrow\) services \(\rightarrow\) repositories \(\rightarrow\) storage) across key user actions such as login and session completion.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{\detokenize{diagrams/uml_sequence_diagram (1).png}}
+  \caption{Sequence diagram of core interactions.}
+\end{figure}
+
+\subsection{ER Diagram (\texttt{diagrams/Er\_Diagram.jpg})}
+\textbf{Purpose}: Provides a conceptual data model. Although the current implementation is key-value storage, the ER diagram is a useful blueprint for migrating to a relational database.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{diagrams/Er_Diagram.jpg}
+  \caption{Conceptual ER diagram for user/session-related data.}
+\end{figure}
+
+% ------------------------------------------------------------
+\section{Challenges \& Trade-offs}
+
+\subsection{Key Challenges}
+\begin{itemize}[leftmargin=1.2em]
+  \item Balancing a premium UI/UX with a maintainable component structure.
+  \item Designing ``clean architecture'' boundaries in a frontend-only environment.
+  \item Simulating AI features without exposing secrets or requiring a backend.
+\end{itemize}
+
+\subsection{Trade-offs}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Client-only persistence}: simplifies setup and demos, but limits real security and multi-device access.
+  \item \textbf{State-based navigation}: avoids routing complexity, but lacks deep-linking and URL shareability.
+  \item \textbf{Mock AI}: good for UI prototyping; production requires secure server-side integration.
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Future Improvements}
+\begin{itemize}[leftmargin=1.2em]
+  \item Add a backend (Node/Express or serverless) for real authentication, secure AI calls, and persistence.
+  \item Replace localStorage ``DB'' with PostgreSQL (aligning with the ER diagram) and introduce migrations.
+  \item Implement real STT via Web Speech API wrapper (\texttt{speechToTextOnce}) and store transcripts.
+  \item Add role-based interview banks, question randomization, and more robust analytics.
+  \item Introduce a router (React Router) for deep links (\texttt{/about}, \texttt{/dashboard}, etc.).
+  \item Improve security posture: password hashing, session tokens, and CSP headers (server-side).
+\end{itemize}
+
+% ------------------------------------------------------------
+\section{Conclusion}
+AntriView AI demonstrates a portfolio-ready system design using a modern frontend stack, clean layering, and a maintainable approach to feature development.
+While the current implementation is frontend-only, the architecture intentionally supports evolution into a full-stack system with secure AI services and persistent analytics.
+
+\end{document}
+
