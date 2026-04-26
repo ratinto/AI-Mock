@@ -1,8 +1,8 @@
 import React, { useRef } from 'react';
 import { 
-  Plus, Trash2, Save, ChevronLeft, Download, Loader2, FileText,
+  Plus, Trash2, Save, Download, Loader2, FileText,
   User, Link as LinkIcon, BookOpen, Briefcase, Code, Users, Clock,
-  Layers, Cpu, Terminal, Type, X, Upload, Search, FileCode, RefreshCcw, Sparkles
+  Layers, Cpu, Terminal, X, Upload, FileCode, RefreshCcw, Sparkles
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';

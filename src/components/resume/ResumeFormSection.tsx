@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronLeft, Plus } from 'lucide-react';
-import type { ResumeStructuredData } from '../../domain/resume';
+import type { ResumeStructuredData as _ResumeStructuredData } from '../../domain/resume';
 
 export const Field: React.FC<{ label: string, value: string, onChange: (v: string) => void, textarea?: boolean }> = ({ label, value, onChange, textarea }) => (
   <div className="field-studio">
