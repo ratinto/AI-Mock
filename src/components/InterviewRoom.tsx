@@ -4,7 +4,7 @@ import { useServices } from '../app/ServicesProvider';
 import { getSelectedPersona } from './PersonaLab';
 import type { InterviewConfig, SessionReport } from '../domain/user';
 import { speechToTextOnce } from '../lib/speech';
-import { buildQuestions, scoreAnswer, buildSessionReport, generateFollowUp } from '../lib/interviewEngine';
+import { buildQuestions, scoreAnswer, buildSessionReport, generateFollowUp } from '../application/useCases/interview';
 
 // Pure CSS Animated AI Orb (Premium Monochrome Aesthetic)
 const AIInterviewerOrb = () => (

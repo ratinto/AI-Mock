@@ -1,68 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { 
-  Plus, 
-  Trash2, 
-  Save, 
-  Sparkles, 
-  ChevronLeft, 
-  Download, 
-  Loader2, 
-  FileText,
-  User,
-  Link as LinkIcon,
-  BookOpen,
-  Briefcase,
-  Code,
-  Users,
-  Clock,
-  Layers,
-  Cpu,
-  Terminal,
-  Type,
-  X,
-  ShieldCheck,
-  AlertCircle,
-  Upload,
-  Search,
-  Bold,
-  Italic,
-  List,
-  Image as ImageIcon,
-  Table,
-  Undo2,
-  Redo2,
-  FileCode,
-  RefreshCcw
+  Plus, Trash2, Save, ChevronLeft, Download, Loader2, FileText,
+  User, Link as LinkIcon, BookOpen, Briefcase, Code, Users, Clock,
+  Layers, Cpu, Terminal, Type, X, Upload, Search, FileCode, RefreshCcw, Sparkles
 } from 'lucide-react';
-import Editor from '@monaco-editor/react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { api } from '../lib/api';
-import type { Resume, ResumeStructuredData } from '../domain/resume';
 
-interface ResumeFeedback {
-  score: number;
-  ats_compatibility: number;
-  readability: number;
-  impact_metrics: number;
-  summary: string;
-  strengths: string[];
-  weaknesses: string[];
-  recommendations: string[];
-}
-
-const INITIAL_RESUME_DATA: ResumeStructuredData = {
-  title: '',
-  target_role: '',
-  general: { name: '', email: '', phone: '', summary: '' },
-  socialLinks: { github: '', linkedin: '', portfolio: '' },
-  education: [],
-  experience: [],
-  projects: [],
-  skills: [],
-  certificates: [],
-  coCurricular: []
-};
+import { useResumeEditor } from '../hooks/useResumeEditor';
+import { LatexEditorPanel } from './resume/LatexEditorPanel';
+import { ResumeEvaluationPanel } from './resume/ResumeEvaluationPanel';
+import { SectionEditor, Field } from './resume/ResumeFormSection';
+import { ResumePreviewContent } from './resume/ResumePreviewContent';
+import type { Resume } from '../domain/resume';
 
 const SECTIONS = [
   { id: 'general', label: 'Identity', icon: <User size={20} /> },
@@ -75,126 +25,38 @@ const SECTIONS = [
 ];
 
 const ResumeAI: React.FC = () => {
-  const [view, setView] = useState<'library' | 'editor' | 'analysis-hub'>('library');
-  const [editorMode, setEditorMode] = useState<'form' | 'latex'>('latex');
-  const [resumes, setResumes] = useState<Resume[]>([]);
-  const [activeResume, setActiveResume] = useState<Resume | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [compilingLatex, setCompilingLatex] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [activeSectionId, setActiveSectionId] = useState<string>('general');
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [newResumeInfo, setNewResumeInfo] = useState({ title: '', role: '' });
-  const [feedback, setFeedback] = useState<ResumeFeedback | null>(null);
-  const [compiledPdfUrl, setCompiledPdfUrl] = useState<string | null>(null);
-  
+  const editorHook = useResumeEditor();
+  const {
+    view, setView,
+    editorMode, setEditorMode,
+    resumes,
+    activeResume, setActiveResume,
+    loading,
+    saving,
+    compilingLatex,
+    analyzing,
+    activeSectionId, setActiveSectionId,
+    showNewModal, setShowNewModal,
+    newResumeInfo, setNewResumeInfo,
+    feedback,
+    compiledPdfUrl,
+    handleSelectResume,
+    handleDeleteResume,
+    handleOpenAnalysis,
+    handleCreateResume,
+    handleUpdateResume,
+    handleRecompile,
+    updateSection
+  } = editorHook;
+
   const previewRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { fetchResumes(); }, []);
-
-  const fetchResumes = async () => {
-    try {
-      const data = await api.listResumes();
-      setResumes(data || []);
-    } catch (err) { console.error(err); } finally { setLoading(false); }
-  };
-
-  const handleSelectResume = async (id: string) => {
-    setLoading(true);
-    try {
-      const data = await api.getResume(id);
-      setActiveResume(data);
-      if (data.latex_code) {
-         setCompiledPdfUrl(`https://latexonline.cc/compile?text=${encodeURIComponent(data.latex_code)}&force=true`);
-      } else {
-         setCompiledPdfUrl(null);
-      }
-      setView('editor');
-    } catch (err) { console.error(err); } finally { setLoading(false); }
-  };
-
-  const handleDeleteResume = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await api.deleteResume(id);
-      setResumes(resumes.filter(r => r.id !== id));
-    } catch (err) { console.error(err); }
-  };
-
-  const handleOpenAnalysis = async (resume: Resume) => {
-     setLoading(true);
-     try {
-        const data = await api.getResume(resume.id);
-        setActiveResume(data);
-        setView('analysis-hub');
-        handleAnalyze(data);
-     } catch (err) { console.error(err); } finally { setLoading(false); }
-  };
-
-  const handleAnalyze = async (resumeToAnalyze?: Resume) => {
-    const target = resumeToAnalyze || activeResume;
-    if (!target) return;
-    setAnalyzing(true);
-    try {
-      const result = await api.evaluateResume({ 
-        id: target.id, 
-        data: target.data, 
-        target_role: target.target_role 
-      });
-      setFeedback(result.feedback || result);
-    } catch (err) { console.error(err); } finally { setAnalyzing(false); }
-  };
-
-  const handleCreateResume = async () => {
-    if (!newResumeInfo.title || !newResumeInfo.role) return;
-    setLoading(true);
-    try {
-      const data = await api.createResume(newResumeInfo.title, newResumeInfo.role, INITIAL_RESUME_DATA);
-      setResumes([data, ...resumes]);
-      handleSelectResume(data.id);
-      setShowNewModal(false);
-      setNewResumeInfo({ title: '', role: '' });
-    } catch (err) { console.error(err); } finally { setLoading(false); }
-  };
-
-  const handleUpdateResume = async () => {
-    if (!activeResume) return;
-    setSaving(true);
-    try {
-      await api.updateResume(activeResume.id, activeResume.title, activeResume.target_role, activeResume.data, activeResume.latex_code);
-    } catch (err) { console.error(err); } finally { setSaving(false); }
-  };
-
-  const handleRecompile = async () => {
-    if (!activeResume?.latex_code) return;
-    setCompilingLatex(true);
-    try {
-      // In Visual Mode: Parse LaTeX to JSON. In Code Mode: Compile true PDF.
-      if (editorMode === 'form') {
-         const result = await api.parseLatex(activeResume.latex_code);
-         if (result && result.data) {
-            setActiveResume(prev => prev ? { ...prev, data: result.data } : null);
-         }
-      } else {
-         // Generate true PDF url for iframe
-         const encodedLatex = encodeURIComponent(activeResume.latex_code);
-         const pdfUrl = `https://latexonline.cc/compile?text=${encodedLatex}&force=true`;
-         setCompiledPdfUrl(pdfUrl);
-      }
-    } catch (err) { 
-      console.error(err); 
-    } finally { setCompilingLatex(false); }
-  };
 
   const downloadPDF = async () => {
     if (editorMode === 'latex' && compiledPdfUrl) {
-       // Download the true PDF directly
        window.open(compiledPdfUrl, '_blank');
        return;
     }
     
-    // Visual mode fallback
     if (!previewRef.current) return;
     const canvas = await html2canvas(previewRef.current, { scale: 3, useCORS: true });
     const imgData = canvas.toDataURL('image/png');
@@ -205,14 +67,8 @@ const ResumeAI: React.FC = () => {
     pdf.save(`${activeResume?.title || 'resume'}.pdf`);
   };
 
-  const updateSection = (section: keyof ResumeStructuredData, value: any) => {
-    if (!activeResume) return;
-    setActiveResume({ ...activeResume, data: { ...activeResume.data, [section]: value } });
-  };
-
   return (
     <div className="studio-root light-theme animate-fade">
-      {/* Premium Studio Header */}
       <nav className="studio-nav header-glass">
          <div className="nav-left">
             <div className="studio-brand">
@@ -282,7 +138,7 @@ const ResumeAI: React.FC = () => {
                        <div className="c-icon"><Plus size={32} strokeWidth={1} /></div>
                        <h3>New Draft</h3>
                     </div>
-                    {(resumes || []).map(r => (
+                    {(resumes || []).map((r: Resume) => (
                       <div key={r.id} className="studio-card resume-item" onClick={() => handleSelectResume(r.id)}>
                          <div className="c-top">
                             <span className="c-status">Ready</span>
@@ -312,7 +168,7 @@ const ResumeAI: React.FC = () => {
                      </div>
                      <div className="hub-list">
                         <label>Registry Drafts</label>
-                        {(resumes || []).map(r => (
+                        {(resumes || []).map((r: Resume) => (
                            <div key={r.id} className={`hub-list-item ${activeResume?.id === r.id ? 'active' : ''}`} onClick={() => handleOpenAnalysis(r)}>
                               <FileText size={14} /> {r.title}
                            </div>
@@ -320,38 +176,7 @@ const ResumeAI: React.FC = () => {
                      </div>
                   </aside>
                   <div className="hub-body">
-                     {analyzing ? (
-                        <div className="hub-loader"><Loader2 className="spin" size={48} /><h2>Evaluating Strategy...</h2></div>
-                     ) : feedback ? (
-                        <div className="hub-report animate-fade">
-                           <div className="report-header">
-                              <div className="report-score-box">
-                                 <span className="score-val">{feedback.score}</span>
-                                 <span className="score-lbl">Intel Score</span>
-                              </div>
-                              <div className="report-summary">
-                                 <label>EXECUTIVE SUMMARY</label>
-                                 <p>{feedback.summary}</p>
-                              </div>
-                           </div>
-                           <div className="report-metrics">
-                              <div className="r-metric"><strong>{feedback.ats_compatibility}%</strong> ATS Match</div>
-                              <div className="r-metric"><strong>{feedback.readability}%</strong> Recruiter Score</div>
-                           </div>
-                           <div className="report-panels">
-                              <div className="r-panel pos">
-                                 <h6><ShieldCheck size={14} /> Strengths</h6>
-                                 <ul>{feedback.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
-                              </div>
-                              <div className="r-panel neg">
-                                 <h6><AlertCircle size={14} /> Critical Gaps</h6>
-                                 <ul>{feedback.weaknesses.map((w, i) => <li key={i}>{w}</li>)}</ul>
-                              </div>
-                           </div>
-                        </div>
-                     ) : (
-                        <div className="hub-empty-state"><Search size={48} /><p>Select a draft to view AI intel</p></div>
-                     )}
+                     <ResumeEvaluationPanel analyzing={analyzing} feedback={feedback} />
                   </div>
                </div>
             )}
@@ -360,49 +185,7 @@ const ResumeAI: React.FC = () => {
               <div className="studio-workspace split-view">
                  <div className="editor-pane">
                     {editorMode === 'latex' ? (
-                       <div className="latex-studio-container">
-                          <div className="latex-top-tools">
-                             <div className="tool-row">
-                                <div className="tool-btn-grp">
-                                   <button><Undo2 size={14} /></button>
-                                   <button><Redo2 size={14} /></button>
-                                </div>
-                                <div className="divider-v"></div>
-                                <div className="tool-btn-grp">
-                                   <button><Bold size={14} /></button>
-                                   <button><Italic size={14} /></button>
-                                   <button><Type size={14} /></button>
-                                </div>
-                                <div className="divider-v"></div>
-                                <div className="tool-btn-grp">
-                                   <button><List size={14} /></button>
-                                   <button><Table size={14} /></button>
-                                   <button><ImageIcon size={14} /></button>
-                                </div>
-                             </div>
-                             <div className="file-header">
-                                <FileCode size={14} /> <span>main.tex</span>
-                                <div className="status-tag">Editing</div>
-                             </div>
-                          </div>
-                          <div className="code-editor-wrap">
-                             <Editor
-                                height="100%"
-                                defaultLanguage="latex"
-                                theme="vs"
-                                value={activeResume.latex_code || ''}
-                                onChange={(val) => setActiveResume({ ...activeResume, latex_code: val || '' })}
-                                options={{ 
-                                   minimap: { enabled: false }, 
-                                   fontSize: 14, 
-                                   lineHeight: 1.6,
-                                   padding: { top: 20 },
-                                   scrollbar: { vertical: 'hidden' },
-                                   fontFamily: "'Fira Code', monospace"
-                                }}
-                             />
-                          </div>
-                       </div>
+                       <LatexEditorPanel activeResume={activeResume} setActiveResume={setActiveResume} />
                     ) : (
                        <div className="visual-studio-container">
                           <aside className="visual-sidebar">
@@ -607,200 +390,5 @@ const ResumeAI: React.FC = () => {
     </div>
   );
 };
-
-const ResumePreviewContent: React.FC<{ data: any }> = ({ data }) => {
-  if (!data) return null;
-  return (
-    <div className="academic-theme">
-      <header style={{ marginBottom: '20pt' }}>
-        <h1 style={{ fontSize: '24pt', marginBottom: '4pt' }}>{data.general?.name || 'Identity Name'}</h1>
-        <div style={{ fontSize: '10pt', display: 'flex', flexDirection: 'column', gap: '2pt' }}>
-           <div><strong>Phone:</strong> {data.general?.phone || '+91 0000000000'}</div>
-           <div><strong>Email:</strong> {data.general?.email || 'email@example.com'}</div>
-           <div style={{ display: 'flex', gap: '8pt', marginTop: '4pt' }}>
-              {data.socialLinks?.linkedin && <a href={data.socialLinks.linkedin}>LinkedIn</a>}
-              {data.socialLinks?.github && <span>• <a href={data.socialLinks.github}>Github</a></span>}
-           </div>
-        </div>
-      </header>
-
-      {data.general?.summary && (
-         <section>
-            <div className="section-h">Professional Summary</div>
-            <p style={{ fontSize: '10pt', lineHeight: '1.5', textAlign: 'justify' }}>{data.general.summary}</p>
-         </section>
-      )}
-
-      {data.education?.length > 0 && (
-         <section>
-            <div className="section-h">Education</div>
-            {data.education.map((edu: any, i: number) => (
-               <div key={i} style={{ marginBottom: '10pt' }}>
-                  <div className="row-flex"><span>{edu.degree}</span><span>{edu.end_date}</span></div>
-                  <div className="row-sub"><span style={{ fontStyle: 'italic' }}>{edu.institution}</span><strong>Grade: {edu.grade}</strong></div>
-               </div>
-            ))}
-         </section>
-      )}
-
-      {data.experience?.length > 0 && (
-         <section>
-            <div className="section-h">Internships</div>
-            {data.experience.map((exp: any, i: number) => (
-               <div key={i} style={{ marginBottom: '12pt' }}>
-                  <div className="row-flex"><span>{exp.role}</span><span>{exp.start_date} - {exp.end_date}</span></div>
-                  <div className="row-sub"><span style={{ fontStyle: 'italic' }}>{exp.company}</span>{exp.incubated && <span style={{ fontStyle: 'italic' }}>{exp.incubated}</span>}</div>
-                  {exp.description && (
-                     <div className="bullet-list">
-                        {(exp.description.split('\n') || []).map((line: string, li: number) => (
-                           <div key={li} className="bullet-item">{line}</div>
-                        ))}
-                     </div>
-                  )}
-               </div>
-            ))}
-         </section>
-      )}
-
-      {data.projects?.length > 0 && (
-         <section>
-            <div className="section-h">Projects</div>
-            {data.projects.map((proj: any, i: number) => (
-               <div key={i} style={{ marginBottom: '14pt' }}>
-                  <div className="row-flex"><span>{proj.name} ({proj.github && <a href={proj.github}>Github</a>}{proj.demo && <> ) ( <a href={proj.demo}>Demo</a></>})</span><span>{proj.date}</span></div>
-                  <div style={{ fontSize: '10pt', fontWeight: 700, margin: '2pt 0' }}>Tech Stacks — <span style={{ fontWeight: 400 }}>{(proj.technologies || [])?.join?.(', ')}</span></div>
-                  {proj.description && (
-                     <div className="bullet-list">
-                        {(proj.description.split('\n') || []).map((line: string, li: number) => (
-                           <div key={li} className="bullet-item">{line}</div>
-                        ))}
-                     </div>
-                  )}
-               </div>
-            ))}
-         </section>
-      )}
-
-      {data.skills?.length > 0 && (
-         <section>
-            <div className="section-h">Skills</div>
-            {data.skills.map((skill: any, i: number) => (
-               <div key={i} style={{ fontSize: '10pt', marginBottom: '4pt' }}>
-                  <strong>{skill.category}:</strong> {skill.items?.join?.(', ')}
-               </div>
-            ))}
-         </section>
-      )}
-    </div>
-  );
-};
-
-const SectionEditor: React.FC<{ sectionId: string, data: any, updateSection: any }> = ({ sectionId, data, updateSection }) => {
-  if (!data) return null;
-  const current = data[sectionId];
-  switch (sectionId) {
-    case 'general':
-      return (
-        <div className="animate-fade">
-           <Field label="Full Name" value={current?.name || ''} onChange={v => updateSection('general', {...current, name: v})} />
-           <Field label="Email" value={current?.email || ''} onChange={v => updateSection('general', {...current, email: v})} />
-           <Field label="Phone" value={current?.phone || ''} onChange={v => updateSection('general', {...current, phone: v})} />
-           <Field label="Summary" textarea value={current?.summary || ''} onChange={v => updateSection('general', {...current, summary: v})} />
-        </div>
-      );
-    case 'socialLinks':
-      return (
-        <div className="animate-fade">
-           <Field label="LinkedIn URL" value={current?.linkedin || ''} onChange={v => updateSection('socialLinks', {...current, linkedin: v})} />
-           <Field label="GitHub URL" value={current?.github || ''} onChange={v => updateSection('socialLinks', {...current, github: v})} />
-        </div>
-      );
-    default:
-      return <ListView items={current || []} onUpdate={(v: any) => updateSection(sectionId, v)} sectionId={sectionId} />;
-  }
-};
-
-const ListView: React.FC<{ items: any[], onUpdate: any, sectionId: string }> = ({ items, onUpdate, sectionId }) => {
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const getTemplate = () => {
-    if (sectionId === 'experience') return {company:'', role:'', start_date:'', end_date:'', description:'', incubated: '', hidden: false};
-    if (sectionId === 'education') return {institution:'', degree:'', end_date:'', grade: '', hidden: false};
-    if (sectionId === 'projects') return {name:'', description:'', technologies:[], github:'', demo:'', date:'', hidden: false};
-    if (sectionId === 'skills') return {category:'', items:[], hidden: false};
-    return {name:'', hidden: false};
-  };
-  const getSummary = (item: any) => {
-    if (sectionId === 'experience') return { title: item?.role || 'Role', subtitle: item?.company || 'Organization' };
-    if (sectionId === 'education') return { title: item?.degree || 'Degree', subtitle: item?.institution || 'Institution' };
-    if (sectionId === 'projects') return { title: item?.name || 'Project Name', subtitle: item?.date || 'Date' };
-    if (sectionId === 'skills') return { title: item?.category || 'Category', subtitle: (item?.items || [])?.join?.(', ')?.substring(0, 30) };
-    return { title: 'Entry', subtitle: 'Detail' };
-  };
-  if (editingIndex !== null) {
-     const item = (items && items[editingIndex]) || getTemplate();
-     const update = (newItem: any) => onUpdate((items || []).map((it, idx) => idx === editingIndex ? newItem : it));
-     return (
-        <div className="animate-fade">
-           <button className="btn-secondary-studio" onClick={() => setEditingIndex(null)} style={{ marginBottom: '24px' }}>
-              <ChevronLeft size={12} /> Back
-           </button>
-           {sectionId === 'experience' && (
-              <>
-                 <Field label="Job Title" value={item.role} onChange={v => update({...item, role: v})} />
-                 <Field label="Organization" value={item.company} onChange={v => update({...item, company: v})} />
-                 <Field label="Points" textarea value={item.description} onChange={v => update({...item, description: v})} />
-              </>
-           )}
-           {sectionId === 'projects' && (
-              <>
-                 <Field label="Title" value={item.name} onChange={v => update({...item, name: v})} />
-                 <Field label="Tech Stack" value={item.technologies?.join(', ')} onChange={v => update({...item, technologies: v.split(',').map(s=>s.trim())})} />
-                 <Field label="Points" textarea value={item.description} onChange={v => update({...item, description: v})} />
-              </>
-           )}
-           {sectionId === 'skills' && (
-              <>
-                 <Field label="Category" value={item.category} onChange={v => update({...item, category: v})} />
-                 <Field label="Items" textarea value={item.items?.join(', ')} onChange={v => update({...item, items: v.split(',').map(s=>s.trim())})} />
-              </>
-           )}
-           <button className="btn-primary-studio" onClick={() => setEditingIndex(null)} style={{ width: '100%', marginTop: '20px' }}>Save Entry</button>
-        </div>
-     );
-  }
-  return (
-    <div className="item-list-view animate-fade">
-       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-          <button className="btn-secondary-studio" onClick={() => {
-             const newList = [...(items || []), getTemplate()];
-             onUpdate(newList);
-             setEditingIndex(newList.length - 1);
-          }}>
-             <Plus size={14} /> Add Item
-          </button>
-       </div>
-       {(items || []).map((item, i) => {
-          const summary = getSummary(item);
-          return (
-             <div key={i} className="item-summary-card">
-                <div><h5>{summary.title}</h5><p>{summary.subtitle}</p></div>
-                <button className="btn-secondary-studio" onClick={() => setEditingIndex(i)}>Edit</button>
-             </div>
-          );
-       })}
-    </div>
-  );
-};
-
-const Field: React.FC<{ label: string, value: string, onChange: (v: string) => void, textarea?: boolean }> = ({ label, value, onChange, textarea }) => (
-  <div className="field-studio">
-    <label>{label}</label>
-    {textarea ? (
-      <textarea value={value || ''} onChange={e => onChange(e.target.value)} />
-    ) : (
-      <input type="text" value={value || ''} onChange={e => onChange(e.target.value)} />
-    )}
-  </div>
-);
 
 export default ResumeAI;

@@ -4,6 +4,26 @@ import { createFeedbackUseCases } from '../application/useCases/feedback';
 import { LocalStorageFeedbackRepository } from '../infrastructure/repositories/localStorageFeedbackRepository';
 import { browserLocalStorage } from '../infrastructure/storage/browserStorage';
 
+/**
+ * ARCHITECTURAL DEBT NOTICE (Frontend Clean Architecture):
+ * 
+ * 1. Persistence Layer Inconsistency:
+ *    Currently, `services.ts` acts as a partial Composition Root, but relies on a mix of 
+ *    remote API calls (`api.*`) and local storage (`getStoredUser()`, `sessionStorage`).
+ *    In a strict Clean Architecture, this file should instantiate concrete repositories 
+ *    (e.g., `RemoteUserRepository`, `LocalAuthTokenRepository`) that implement domain interfaces.
+ * 
+ * 2. Missing FeedbackRepository:
+ *    Currently, feedback evaluation (Resume AI) and interview tracking either float 
+ *    in UI components or directly hit the `api` singleton. We need to define a 
+ *    `FeedbackRepository` interface in the domain layer and inject its implementation here.
+ *    This will decouple the UI from knowing whether feedback is stored locally or remotely.
+ * 
+ * Future Refactoring Steps:
+ * - Define standard Repository interfaces in `src/domain/ports/`.
+ * - Move `lib/api.ts` into `src/infrastructure/apiClient.ts`.
+ * - Inject repositories into Use Cases, rather than calling `api` directly from here.
+ */
 export function createServices() {
   const auth = {
     loginByEmail: async (email: string, password: string) => {

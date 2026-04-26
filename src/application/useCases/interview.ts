@@ -1,4 +1,4 @@
-import type { InterviewConfig, QuestionAnalysis, ResumeData, SessionReport } from '../domain/user';
+import type { InterviewConfig, QuestionAnalysis, ResumeData, SessionReport } from '../../domain/user';
 
 const FILLER_WORDS = ['um', 'umm', 'uh', 'like', 'you know', 'actually', 'basically', 'literally'];
 
