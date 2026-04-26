@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { LayoutGrid, Beaker, FileText, History as HistoryIcon, User, Plus, LogOut, ChevronRight, Info, Flame, Search, Bell } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { LayoutGrid, Beaker, FileText, History as HistoryIcon, User, Plus, LogOut, Info, Flame, Search, Bell } from 'lucide-react';
 import { useServices } from '../app/ServicesProvider';
 import InterviewSetup from './InterviewSetup';
 import ResumeAI from './ResumeAI';
@@ -7,9 +7,9 @@ import History from './History';
 import InterviewRoom from './InterviewRoom';
 import Report from './Report';
 import PersonaLab from './PersonaLab';
-import { getSelectedPersona } from './PersonaLab';
 import Profile from './Profile';
 import AboutUs from './AboutUs';
+import type { InterviewConfig, SessionReport } from '../domain/user';
 
 interface TrackCardProps {
   title: string;
@@ -49,21 +49,69 @@ const FeatureBox = ({ icon, title, desc, onClick }: { icon: React.ReactNode, tit
   </div>
 );
 
+const FeatureVisibilityCard: React.FC<{ title: string; status: 'Live' | 'Beta'; location: string; onClick?: () => void }> = ({ title, status, location, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="dash-card"
+    style={{ textAlign: 'left', cursor: 'pointer', padding: '14px 16px', width: '100%' }}
+  >
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{title}</div>
+      <span style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '999px', background: status === 'Live' ? '#111' : '#f3f4f6', color: status === 'Live' ? '#fff' : '#111' }}>{status}</span>
+    </div>
+    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{location}</div>
+  </button>
+);
+
 type DashboardView = 'overview' | 'persona' | 'resume' | 'history' | 'setup' | 'interview' | 'report' | 'profile' | 'about';
 
 const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
-  const { auth } = useServices();
+  const { auth, profile } = useServices();
   const [activeView, setActiveViewState] = useState<DashboardView>(() => {
     return (sessionStorage.getItem('antriview_dash_view') as any) || 'overview';
   });
 
+  const [bootstrapped, setBootstrapped] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [interviewConfig, setInterviewConfig] = useState<{ role: string, track: 'dsa' | 'hr' | 'dev', personaId?: string }>({ role: 'SDE', track: 'dsa' });
+  const [interviewConfig, setInterviewConfig] = useState<InterviewConfig>({
+    role: 'SDE',
+    difficulty: 'Medium',
+    type: 'Mixed',
+    personaStyle: 'default',
+    timePressure: true,
+    peerMode: false,
+  });
+  const [latestReport, setLatestReport] = useState<SessionReport | null>(null);
 
   const currentUser = useMemo(() => auth.getCurrentUser(), [auth, refreshTrigger]);
 
-  // Get the currently selected persona
-  const activePersona = useMemo(() => getSelectedPersona(), [refreshTrigger]);
+  const activePersonaName = currentUser?.selectedPersona ?? 'default';
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await auth.hydrateCurrentUser();
+      } finally {
+        if (!cancelled) {
+          setBootstrapped(true);
+          setRefreshTrigger((t) => t + 1);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [auth]);
+
+  if (!bootstrapped) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-secondary)' }}>
+        <div className="dash-card" style={{ padding: '28px 32px', fontWeight: 800 }}>Loading your workspace…</div>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     onLogout();
@@ -76,6 +124,25 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     const email = (currentUser.email ?? '').trim();
     if (email.includes('@')) return email.split('@')[0];
     return 'there';
+  })();
+
+  const totalSessions =
+    (currentUser.stats?.dsa?.sessions ?? 0) +
+    (currentUser.stats?.hr?.sessions ?? 0) +
+    (currentUser.stats?.dev?.sessions ?? 0);
+
+  const averageScore = (() => {
+    const scores = (currentUser.history ?? [])
+      .map((h) => Number(String(h.score ?? '').replace(/[^0-9]/g, '')))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    if (!scores.length) return 0;
+    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  })();
+
+  const latestScore = (() => {
+    const first = currentUser.history?.[0];
+    const n = Number(String(first?.score ?? '').replace(/[^0-9]/g, ''));
+    return Number.isFinite(n) ? n : 0;
   })();
 
   const setActiveView = (view: DashboardView) => {
@@ -150,26 +217,26 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             </header>
 
             {/* Quick Metrics Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' }}>
+            <div className="dash-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' }}>
               <div className="dash-card" style={{ background: '#000', color: '#fff' }}>
                 <div style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '8px' }}>Total Interviews</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{currentUser.stats.dsa.sessions + currentUser.stats.hr.sessions + currentUser.stats.dev.sessions}</div>
-                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: '#4ADE80' }}>↑ 12% from last week</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{totalSessions}</div>
+                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: '#4ADE80' }}>{totalSessions === 0 ? 'Start your first session' : 'Tracked in PostgreSQL'}</div>
               </div>
               <div className="dash-card">
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Active Goals</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>4</div>
-                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: 'var(--text-subtle)' }}>On track</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Average Score</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{averageScore ? `${averageScore}%` : '—'}</div>
+                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: 'var(--text-subtle)' }}>{averageScore ? 'Across all sessions' : 'No sessions yet'}</div>
               </div>
               <div className="dash-card">
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Success Rate</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>82%</div>
-                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: '#4ADE80' }}>↑ 5% increase</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Latest Score</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{latestScore ? `${latestScore}%` : '—'}</div>
+                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: 'var(--text-subtle)' }}>{latestScore ? 'Most recent interview' : 'No sessions yet'}</div>
               </div>
               <div className="dash-card">
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Time Practiced</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>12.5h</div>
-                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: 'var(--text-subtle)' }}>This month</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Persona</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '-0.5px' }}>{activePersonaName}</div>
+                <div style={{ fontSize: '0.75rem', marginTop: '4px', color: 'var(--text-subtle)' }}>Saved per user</div>
               </div>
             </div>
 
@@ -205,6 +272,26 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                     />
                   </div>
                 </section>
+
+                <section>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '20px' }}>Feature Visibility Map</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <FeatureVisibilityCard title="Real Voice Interview" status="Live" location="Interview Room mic button" onClick={() => setActiveView('setup')} />
+                    <FeatureVisibilityCard title="Non-verbal Cue Analysis" status="Beta" location="Interview Room live metrics panel" onClick={() => setActiveView('setup')} />
+                    <FeatureVisibilityCard title="Resume-Based Questions" status="Live" location="Resume AI + Interview Setup" onClick={() => setActiveView('resume')} />
+                    <FeatureVisibilityCard title="Job Description Mode" status="Live" location="Setup Session job description box" onClick={() => setActiveView('setup')} />
+                    <FeatureVisibilityCard title="Progress Dashboard & Radar" status="Live" location="History + Report metrics" onClick={() => setActiveView('history')} />
+                    <FeatureVisibilityCard title="Answer vs Ideal Answer" status="Live" location="Session Report insight comparison" onClick={() => setActiveView('report')} />
+                    <FeatureVisibilityCard title="Time-Pressure Mode" status="Live" location="Setup toggle + Interview timer" onClick={() => setActiveView('setup')} />
+                    <FeatureVisibilityCard title="Live Coding Simulator" status="Live" location="Interview Room Open Source Editor" onClick={() => setActiveView('setup')} />
+                    <FeatureVisibilityCard title="Dynamic Follow-Ups" status="Live" location="Interview Room dynamic follow-up card" onClick={() => setActiveView('setup')} />
+                    <FeatureVisibilityCard title="Interview Type Specialization" status="Live" location="Setup Focus Track options" onClick={() => setActiveView('setup')} />
+                    <FeatureVisibilityCard title="PDF Report Card" status="Live" location="Report > Download PDF Report" onClick={() => setActiveView('report')} />
+                    <FeatureVisibilityCard title="Peer Practice Rooms" status="Beta" location="Setup Peer Practice toggle" onClick={() => setActiveView('setup')} />
+                    <FeatureVisibilityCard title="Interviewer Persona Selection" status="Live" location="Persona Lab" onClick={() => setActiveView('persona')} />
+                    <FeatureVisibilityCard title="Daily Habit Streak" status="Live" location="Dashboard header + History" onClick={() => setActiveView('history')} />
+                  </div>
+                </section>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -238,20 +325,23 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           </div>
         );
       case 'persona':
-        return <PersonaLab onSelectPersona={() => {
-          setRefreshTrigger(t => t + 1);
-          setActiveView('setup');
-        }} />;
+        return (
+          <PersonaLab
+            onSelectPersona={async (persona) => {
+              await profile.updateUser(currentUser.email, { selectedPersona: persona.name });
+              setRefreshTrigger((t) => t + 1);
+              setActiveView('setup');
+            }}
+          />
+        );
       case 'resume':
         return <ResumeAI />;
       case 'setup':
         return <InterviewSetup 
-          onStart={(config) => { 
-            const trackMapping: any = { 'DSA': 'dsa', 'System Design': 'dev', 'HR': 'hr', 'HR / Behavioral': 'hr', 'Mixed': 'dsa' };
-            setInterviewConfig({ 
-              role: config.role, 
-              track: trackMapping[config.type] || 'dsa',
-              personaId: activePersona?.id,
+          onStart={(config) => {
+            setInterviewConfig({
+              ...config,
+              personaStyle: activePersonaName,
             });
             setActiveView('interview'); 
           }} 
@@ -269,9 +359,18 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           />
         );
       case 'interview':
-        return <InterviewRoom track={interviewConfig.track} role={interviewConfig.role} onEnd={() => { setRefreshTrigger(t => t + 1); setActiveView('report'); }} />;
+        return (
+          <InterviewRoom
+            config={interviewConfig}
+            onEnd={(report) => {
+              setLatestReport(report);
+              setRefreshTrigger(t => t + 1);
+              setActiveView('report');
+            }}
+          />
+        );
       case 'report':
-        return <Report onBack={() => setActiveView('overview')} />;
+        return <Report report={latestReport} onBack={() => setActiveView('overview')} />;
       default:
         return <div>View {activeView} is under construction</div>;
     }

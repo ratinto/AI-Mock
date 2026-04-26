@@ -1,5 +1,6 @@
 import React from 'react';
-import { CheckCircle2, TrendingUp, ChevronRight, Activity, Target, Zap, AlertCircle } from 'lucide-react';
+import { ChevronRight, Activity, Target, Zap, AlertCircle } from 'lucide-react';
+import type { SessionReport } from '../domain/user';
 
 const MetricBar = ({ label, score }: { label: string, score: number }) => (
   <div style={{ marginBottom: '24px' }}>
@@ -13,7 +14,18 @@ const MetricBar = ({ label, score }: { label: string, score: number }) => (
   </div>
 );
 
-const Report: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const Report: React.FC<{ onBack: () => void; report: SessionReport | null }> = ({ onBack, report }) => {
+  if (!report) {
+    return (
+      <div className="dash-card">
+        <h3>No report available yet.</h3>
+        <button className="btn-black" onClick={onBack} style={{ marginTop: '16px' }}>Back to dashboard</button>
+      </div>
+    );
+  }
+
+  const latest = report.questionAnalyses[report.questionAnalyses.length - 1];
+
   return (
     <div className="animate-fade" style={{ paddingBottom: '100px' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '48px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '32px' }}>
@@ -22,10 +34,10 @@ const Report: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <Activity size={14} /> Performance Analysis
           </div>
           <h2 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-2px', marginBottom: '8px' }}>Session Report</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem' }}>SDE Technical Round • Completed April 15, 2026</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem' }}>{report.config.role} • {report.config.type} • Completed {new Date(report.date).toLocaleString()}</p>
         </div>
         <div style={{ textAlign: 'right' }}>
-           <div style={{ fontSize: '4.5rem', fontWeight: 900, lineHeight: 0.8, letterSpacing: '-4px' }}>A-</div>
+           <div style={{ fontSize: '4.5rem', fontWeight: 900, lineHeight: 0.8, letterSpacing: '-4px' }}>{report.overall}%</div>
            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 800, marginTop: '12px' }}>Overall Grade</div>
         </div>
       </header>
@@ -37,10 +49,12 @@ const Report: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <Target size={20} />
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Core Competencies</h3>
           </div>
-          <MetricBar label="Technical Accuracy" score={85} />
-          <MetricBar label="Logic & Reasoning" score={92} />
-          <MetricBar label="Communication" score={78} />
-          <MetricBar label="Implementation Speed" score={88} />
+          <MetricBar label="Technical Accuracy" score={report.technicalKnowledge} />
+          <MetricBar label="Logic & Reasoning" score={report.problemSolving} />
+          <MetricBar label="Communication" score={report.communication} />
+          <MetricBar label="Confidence" score={report.confidence} />
+          <MetricBar label="Conciseness" score={report.conciseness} />
+          <MetricBar label="Body Language" score={report.bodyLanguage} />
         </div>
 
         {/* Breakdown */}
@@ -50,7 +64,7 @@ const Report: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <Zap size={18} fill="currentColor" /> Key Strengths
               </h4>
               <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-                Exceptional explanation of distributed systems. Your use of the CAP theorem to justify architectural choices was precise and demonstrated seniority.
+                {report.strengths.join(' ')}
               </p>
            </div>
            <div>
@@ -58,7 +72,7 @@ const Report: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <AlertCircle size={18} /> Critical Gaps
               </h4>
               <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-                Missing edge case validation in your binary search implementation. Ensure null checks and duplicate handling are part of your initial code walk-through.
+                {report.improvements.join(' ')}
               </p>
            </div>
         </div>
@@ -71,19 +85,22 @@ const Report: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Your Response</div>
             <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', fontSize: '0.95rem', lineHeight: 1.6, minHeight: '180px' }}>
-              "In my previous role, I used gRPC for synchronous communication and RabbitMQ for asynchronous tasks to ensure decoupling and improved system resilience during peak loads..."
+              "{latest?.userAnswer || 'No answer captured'}"
             </div>
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-main)', marginBottom: '16px', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>Expert Benchmark</div>
             <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--text-main)', border: '1px solid var(--text-main)', color: '#fff', fontSize: '0.95rem', lineHeight: 1.6, minHeight: '180px' }}>
-              "A robust distributed system leverages synchronous gRPC for low-latency internal communication and asynchronous message brokers (like Kafka or RabbitMQ) for event-driven orchestration, specifically to handle traffic spikes without cascading failures."
+              "{latest?.idealAnswer || 'Benchmark unavailable'}"
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ textAlign: 'center' }}>
+      <div style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', gap: '12px' }}>
+        <button className="btn-white" onClick={() => window.print()} style={{ padding: '16px 32px', fontSize: '1rem' }}>
+          Download PDF Report
+        </button>
         <button className="btn-black" onClick={onBack} style={{ padding: '16px 48px', fontSize: '1rem' }}>
           Dismiss Report & Return <ChevronRight size={20} />
         </button>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { User, Mail, CheckCircle, Shield, KeyRound, Save, RotateCcw, AlertTriangle, ChevronRight } from 'lucide-react';
+import { User, Mail, CheckCircle, Shield, KeyRound, Save, RotateCcw, AlertTriangle } from 'lucide-react';
 import type { UserData } from '../domain/user';
 import { useServices } from '../app/ServicesProvider';
 
@@ -112,10 +112,11 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { profile } = useServices();
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const trimmedName = name.trim();
@@ -139,8 +140,17 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
 
     setError(null);
 
-    profile.updateUser(user.email, { name: trimmedName });
-    if (wantsPasswordChange) profile.updateUser(user.email, { password: newPassword.trim() });
+    try {
+      setIsSaving(true);
+      await profile.updateUser(user.email, {
+        name: trimmedName,
+        ...(wantsPasswordChange ? { password: newPassword.trim() } : {}),
+      });
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to save profile');
+      setIsSaving(false);
+      return;
+    }
 
     setIsSaved(true);
     onUpdate(); 
@@ -150,6 +160,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
     setTimeout(() => {
       setIsSaved(false);
     }, 3000);
+    setIsSaving(false);
   };
 
   const onReset = () => {
@@ -288,10 +299,10 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
                 <button
                   type="submit"
                   className="btn-black"
-                  disabled={!isDirty}
-                  style={{ flex: 2, justifyContent: 'center' }}
+                  disabled={!isDirty || isSaving}
+                  style={{ flex: 2, justifyContent: 'center', opacity: isSaving ? 0.7 : 1 }}
                 >
-                  <Save size={16} /> Save Changes
+                  <Save size={16} /> {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </section>

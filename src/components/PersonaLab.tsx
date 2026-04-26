@@ -53,18 +53,10 @@ const PERSONA_ICONS: Record<string, React.ReactNode> = {
   '4': <Zap size={20} />,
 };
 
-const STORAGE_KEY = 'antriview_selected_persona';
-
 export function getSelectedPersona(): Persona | null {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
-    const p = PERSONAS.find(x => x.id === stored);
-    if (!p) return null;
-    return { ...p, icon: PERSONA_ICONS[p.id] };
-  } catch {
-    return null;
-  }
+  // Persona is stored on the user profile in backend. Fallback to default.
+  const fallback = PERSONAS[0];
+  return fallback ? { ...fallback, icon: PERSONA_ICONS[fallback.id] } : null;
 }
 
 const PersonaCard = ({ persona, selected, onSelect }: { persona: Persona; selected: boolean; onSelect: () => void }) => (
@@ -128,9 +120,7 @@ interface PersonaLabProps {
 }
 
 const PersonaLab: React.FC<PersonaLabProps> = ({ onSelectPersona }) => {
-  const [selectedId, setSelectedId] = useState<string>(() => {
-    return localStorage.getItem(STORAGE_KEY) || '1';
-  });
+  const [selectedId, setSelectedId] = useState<string>('1');
   const [isConfirming, setIsConfirming] = useState(false);
 
   const personas: Persona[] = PERSONAS.map(p => ({
@@ -143,8 +133,6 @@ const PersonaLab: React.FC<PersonaLabProps> = ({ onSelectPersona }) => {
   const handleConfirm = () => {
     if (!selectedPersona) return;
     setIsConfirming(true);
-
-    localStorage.setItem(STORAGE_KEY, selectedId);
 
     setTimeout(() => {
       onSelectPersona(selectedPersona);

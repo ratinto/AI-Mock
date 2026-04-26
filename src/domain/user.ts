@@ -9,6 +9,7 @@ export interface HistoryItem {
   date: string;
   score: string;
   type: string;
+  report?: SessionReport;
 }
 
 export interface ResumeData {
@@ -18,6 +19,47 @@ export interface ResumeData {
   experiences: string[];
   focusAreas: string[];
   parsedAt: string;
+}
+
+export interface InterviewConfig {
+  role: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  type: 'DSA' | 'System Design' | 'HR / Behavioral' | 'Case Study' | 'Mixed';
+  personaStyle: string;
+  jobDescription?: string;
+  timePressure: boolean;
+  peerMode: boolean;
+}
+
+export interface QuestionAnalysis {
+  question: string;
+  userAnswer: string;
+  idealAnswer: string;
+  followUp?: string;
+  score: number;
+  communication: number;
+  confidence: number;
+  conciseness: number;
+  fillerWords: number;
+  speakingPaceWpm: number;
+  bodyLanguageScore: number;
+  finishedInTime: boolean;
+}
+
+export interface SessionReport {
+  id: string;
+  date: string;
+  config: InterviewConfig;
+  overall: number;
+  technicalKnowledge: number;
+  communication: number;
+  problemSolving: number;
+  confidence: number;
+  conciseness: number;
+  bodyLanguage: number;
+  questionAnalyses: QuestionAnalysis[];
+  strengths: string[];
+  improvements: string[];
 }
 
 export interface UserData {

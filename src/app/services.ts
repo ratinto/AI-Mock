@@ -1,23 +1,49 @@
-import { createAuthUseCases } from '../application/useCases/auth';
-import { createSessionUseCases } from '../application/useCases/sessions';
-import { createUserProfileUseCases } from '../application/useCases/userProfile';
-import { browserLocalStorage, browserSessionStorage } from '../infrastructure/storage/browserStorage';
-import { LocalStorageUserRepository } from '../infrastructure/repositories/localStorageUserRepository';
-import { SessionStorageSessionRepository } from '../infrastructure/repositories/sessionStorageSessionRepository';
+import type { HistoryItem, UserData } from '../domain/user';
+import { api, clearAuthStorage, getStoredUser } from '../lib/api';
 
 export function createServices() {
-  const usersRepo = new LocalStorageUserRepository(browserLocalStorage, {
-    storageKey: 'antriview_user_db',
-  });
+  const auth = {
+    loginByEmail: async (email: string, password: string) => {
+      const user = await api.login(email.trim().toLowerCase(), password);
+      return { ok: true as const, user };
+    },
+    loginWithGoogle: async (credential: string) => {
+      const user = await api.googleLogin(credential);
+      return { ok: true as const, user };
+    },
+    signup: async (email: string, name: string, password: string) => {
+      return api.signup(email.trim().toLowerCase(), name.trim(), password);
+    },
+    getCurrentUser: (): UserData | null => getStoredUser(),
+    hydrateCurrentUser: async (): Promise<UserData | null> => {
+      try {
+        return await api.me();
+      } catch {
+        return getStoredUser();
+      }
+    },
+    logout: () => {
+      clearAuthStorage();
+      sessionStorage.removeItem('antriview_view');
+      sessionStorage.removeItem('antriview_dash_view');
+    },
+  };
 
-  const sessionRepo = new SessionStorageSessionRepository(browserSessionStorage, {
-    sessionKey: 'antriview_current_user',
-    additionalKeysToClear: ['antriview_view', 'antriview_dash_view'],
-  });
+  const sessions = {
+    addSession: async (email: string, item: HistoryItem, track: 'dsa' | 'hr' | 'dev') => {
+      const user = getStoredUser();
+      if (!user || user.email !== email) return;
+      await api.addSession(item, track);
+    },
+  };
 
-  const auth = createAuthUseCases({ users: usersRepo, session: sessionRepo });
-  const sessions = createSessionUseCases({ users: usersRepo });
-  const profile = createUserProfileUseCases({ users: usersRepo });
+  const profile = {
+    updateUser: async (email: string, updates: Partial<UserData> & { password?: string }) => {
+      const user = getStoredUser();
+      if (!user || user.email !== email) return null;
+      return api.updateMe(updates);
+    },
+  };
 
   return { auth, sessions, profile } as const;
 }

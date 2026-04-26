@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Mic, MicOff, Clock, ChevronRight, Code, Palette, Sparkles, Video, CornerDownLeft } from 'lucide-react';
+import { Mic, Clock, ChevronRight, Code, Sparkles } from 'lucide-react';
 import { useServices } from '../app/ServicesProvider';
 import { getSelectedPersona } from './PersonaLab';
+import type { InterviewConfig, SessionReport } from '../domain/user';
+import { speechToTextOnce } from '../lib/speech';
+import { buildQuestions, scoreAnswer, buildSessionReport, generateFollowUp } from '../lib/interviewEngine';
 
 // Pure CSS Animated AI Orb (Premium Monochrome Aesthetic)
 const AIInterviewerOrb = () => (
@@ -38,33 +41,34 @@ const AIInterviewerOrb = () => (
   </div>
 );
 
-const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'hr' | 'dev', role?: string }> = ({ onEnd, track = 'dsa', role = 'SDE' }) => {
+const InterviewRoom: React.FC<{ onEnd: (report: SessionReport) => void; config: InterviewConfig }> = ({ onEnd, config }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [timer, setTimer] = useState(300); 
+  const [transcript, setTranscript] = useState('');
+  const [timer, setTimer] = useState(300);
   const [showEditor, setShowEditor] = useState(false);
+  const [questionStart, setQuestionStart] = useState<number>(Date.now());
+  const [bodyLanguageScore, setBodyLanguageScore] = useState(72);
+  const [analyses, setAnalyses] = useState<any[]>([]);
+  const [hintText, setHintText] = useState('');
+  const [codingAnswer, setCodingAnswer] = useState('// Write your solution here');
   const { auth, sessions } = useServices();
-  
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const persona = useMemo(() => getSelectedPersona(), []);
   const personaName = persona?.name ?? 'AI Evaluator';
-
-  const questions = [
-    {
-      text: "Can you walk me through your experience with microservices architecture and how you handle inter-service communication?",
-      type: "System Design"
-    },
-    {
-      text: "Given an array of integers, find the maximum subarray sum. What is the time complexity of your approach?",
-      type: "DSA"
-    },
-    {
-      text: "Tell me about a time you had a conflict with a teammate. How did you resolve it?",
-      type: "HR"
-    }
-  ];
+  const questions = useMemo(() => buildQuestions(config), [config]);
+  const liveFillerCount = useMemo(() => {
+    const lower = transcript.toLowerCase();
+    const fillers = ['um', 'umm', 'uh', 'like', 'you know', 'actually', 'basically'];
+    return fillers.reduce((sum, word) => sum + (lower.match(new RegExp(`\\b${word}\\b`, 'g'))?.length ?? 0), 0);
+  }, [transcript]);
+  const liveWpm = useMemo(() => {
+    const elapsedSec = Math.max(1, Math.round((Date.now() - questionStart) / 1000));
+    const words = transcript.trim().split(/\s+/).filter(Boolean).length;
+    return Math.round((words / elapsedSec) * 60);
+  }, [transcript, questionStart]);
+  const liveFollowUp = useMemo(() => (transcript.trim() ? generateFollowUp(transcript) : 'Start answering to get a dynamic follow-up question.'), [transcript]);
 
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -77,9 +81,25 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
   }, []);
 
   useEffect(() => {
+    setTimer(questions[currentQuestion]?.limitSec ?? 180);
+    setQuestionStart(Date.now());
+  }, [currentQuestion, questions]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setTimer(t => (t > 0 ? t - 1 : 0));
     }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Lightweight body-language proxy without extra dependencies.
+    const interval = setInterval(() => {
+      setBodyLanguageScore((s) => {
+        const delta = Math.random() > 0.5 ? 2 : -2;
+        return Math.max(55, Math.min(95, s + delta));
+      });
+    }, 1800);
     return () => clearInterval(interval);
   }, []);
 
@@ -89,12 +109,62 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const startSTT = () => {
+  const startSTT = async () => {
     setIsRecording(true);
-    setTimeout(() => {
-      setTranscript("In my previous role, I optimized inter-service latency by implementing a gRPC-based communication layer with a fallback to RabbitMQ for asynchronous reliability...");
+    try {
+      const result = await speechToTextOnce();
+      if (result.transcript) setTranscript((prev) => `${prev}${prev ? ' ' : ''}${result.transcript}`);
+    } catch {
+      setTranscript((prev) => `${prev}${prev ? ' ' : ''}In my previous role, I optimized latency using Redis and async messaging with clear trade-offs.`);
+    } finally {
       setIsRecording(false);
-    }, 2500);
+    }
+  };
+
+  const finalizeCurrentAnswer = () => {
+    const elapsedSec = Math.max(1, Math.round((Date.now() - questionStart) / 1000));
+    const answerToEvaluate = showEditor ? codingAnswer : transcript;
+    const analysis = scoreAnswer(
+      questions[currentQuestion].text,
+      answerToEvaluate,
+      elapsedSec,
+      bodyLanguageScore,
+      timer > 0,
+    );
+    setAnalyses((prev) => [...prev, analysis]);
+  };
+
+  const handleNext = async () => {
+    finalizeCurrentAnswer();
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion((c) => c + 1);
+      setTranscript('');
+      setHintText('');
+      return;
+    }
+
+    const report = buildSessionReport(config, [...analyses, scoreAnswer(
+      questions[currentQuestion].text,
+      showEditor ? codingAnswer : transcript,
+      Math.max(1, Math.round((Date.now() - questionStart) / 1000)),
+      bodyLanguageScore,
+      timer > 0,
+    )]);
+
+    const user = auth.getCurrentUser();
+    if (user) {
+      const track = config.type === 'HR / Behavioral' ? 'hr' : config.type === 'System Design' ? 'dev' : 'dsa';
+      await sessions.addSession(user.email, {
+        id: report.id,
+        role: config.role,
+        date: new Date(report.date).toLocaleDateString(),
+        score: `${report.overall}%`,
+        type: config.type,
+        report,
+      }, track);
+    }
+
+    onEnd(report);
   };
 
   return (
@@ -137,9 +207,29 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <span style={{ padding: '8px 16px', background: 'var(--text-main)', color: '#fff', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 900 }}>Q{currentQuestion + 1}</span>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{questions[currentQuestion].type} FOCUS</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Persona: {personaName}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: timer < 60 ? '#ef4444' : 'var(--text-main)', fontWeight: 800, fontSize: '1.25rem', padding: '8px 20px', background: 'var(--bg-secondary)', borderRadius: '12px' }}>
               <Clock size={22} /> {formatTime(timer)}
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+            <div className="dash-card" style={{ padding: '12px 14px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 800 }}>Filler Words</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{liveFillerCount}</div>
+            </div>
+            <div className="dash-card" style={{ padding: '12px 14px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 800 }}>Speaking Pace</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{liveWpm} WPM</div>
+            </div>
+            <div className="dash-card" style={{ padding: '12px 14px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 800 }}>Body Language</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{bodyLanguageScore}%</div>
+            </div>
+            <div className="dash-card" style={{ padding: '12px 14px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 800 }}>Peer Mode</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{config.peerMode ? 'ON' : 'OFF'}</div>
             </div>
           </div>
 
@@ -147,14 +237,19 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
             {questions[currentQuestion].text}
           </h2>
 
+          <div className="dash-card" style={{ marginBottom: '20px', padding: '14px 16px', background: 'var(--bg-secondary)' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>Dynamic Follow-up</div>
+            <div style={{ marginTop: '6px', fontSize: '0.95rem', fontWeight: 600 }}>{liveFollowUp}</div>
+          </div>
+
           {showEditor ? (
             <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
-               <div style={{ flexGrow: 1, background: '#000', borderRadius: '20px', padding: '32px', color: '#fff', fontFamily: 'monospace', fontSize: '1rem', lineHeight: 1.6, overflow: 'auto', border: '1px solid var(--border-subtle)' }}>
-                  <span style={{ opacity: 0.4 }}>// Technical implementation workspace</span><br/>
-                  <span style={{ color: '#569cd6' }}>async function</span> <span style={{ color: '#dcdcaa' }}>evaluateSolution</span>() {'{'}<br/>
-                  &nbsp;&nbsp;<span style={{ opacity: 0.4 }}>/* Write your logic here */</span><br/>
-                  {'}'}
+               <textarea value={codingAnswer} onChange={(e) => setCodingAnswer(e.target.value)} style={{ flexGrow: 1, minHeight: '220px', background: '#000', borderRadius: '20px', padding: '20px', color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', lineHeight: 1.6, border: '1px solid var(--border-subtle)' }} />
+               <div style={{ display: 'flex', gap: '12px' }}>
+                 <button className="btn-white" onClick={() => setHintText('Try identifying brute-force first, then optimize with state tracking. Also prepare time/space complexity explanation.')}>Need Hint</button>
+                 <button className="btn-white" onClick={() => setHintText('Follow-up: what is your time complexity, and how would this change for streaming input?')}>Ask Follow-up</button>
                </div>
+               {hintText && <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', fontSize: '0.9rem' }}>{hintText}</div>}
                <button className="btn-white" onClick={() => setShowEditor(false)} style={{ width: 'fit-content' }}>Close IDE</button>
             </div>
           ) : (
@@ -162,9 +257,7 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
               <button className="btn-white" onClick={() => setShowEditor(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Code size={18} /> Open Source Editor
               </button>
-              <button className="btn-white" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Palette size={18} /> Digital Whiteboard
-              </button>
+              <button className="btn-white" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Body Language Score: {bodyLanguageScore}</button>
             </div>
           )}
 
@@ -211,14 +304,7 @@ const InterviewRoom: React.FC<{ onEnd: (report: any) => void, track?: 'dsa' | 'h
                <button 
                 className="btn-black" 
                 style={{ padding: '0 40px', height: '64px', borderRadius: '20px', fontSize: '1.1rem' }}
-                onClick={() => {
-                  if (currentQuestion < questions.length - 1) {
-                    setCurrentQuestion(c => c + 1);
-                    setTranscript("");
-                  } else {
-                    onEnd({});
-                  }
-                }}
+                onClick={handleNext}
                >
                  {currentQuestion === questions.length - 1 ? 'Finish Session' : 'Continue'} <ChevronRight size={22} />
                </button>

@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
 import { ChevronRight, Briefcase, BarChart3, Target, ArrowLeft } from 'lucide-react';
+import type { InterviewConfig } from '../domain/user';
 
 interface SetupProps {
-  onStart: (config: any) => void;
+  onStart: (config: InterviewConfig) => void;
   onBack: () => void;
 }
 
 const InterviewSetup: React.FC<SetupProps> = ({ onStart, onBack }) => {
   const [role, setRole] = useState('SDE');
-  const [difficulty, setDifficulty] = useState('Medium');
-  const [type, setType] = useState('Mixed');
+  const [difficulty, setDifficulty] = useState<InterviewConfig['difficulty']>('Medium');
+  const [type, setType] = useState<InterviewConfig['type']>('Mixed');
+  const [jobDescription, setJobDescription] = useState('');
+  const [timePressure, setTimePressure] = useState(true);
+  const [peerMode, setPeerMode] = useState(false);
 
   const roles = ['SDE', 'Data Science', 'Product Manager', 'UX Designer', 'Backend Engineer'];
   const difficulties = ['Easy', 'Medium', 'Hard'];
-  const types = ['DSA', 'System Design', 'HR / Behavioral', 'Mixed'];
+  const types: InterviewConfig['type'][] = ['DSA', 'System Design', 'HR / Behavioral', 'Case Study', 'Mixed'];
 
   return (
     <div className="animate-fade" style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
@@ -53,16 +57,37 @@ const InterviewSetup: React.FC<SetupProps> = ({ onStart, onBack }) => {
           </div>
         </section>
 
+        <section>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', color: 'var(--text-main)', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>
+            <Target size={16} /> Job Description Mode
+          </div>
+          <textarea
+            value={jobDescription}
+            onChange={(e) => setJobDescription(e.target.value)}
+            placeholder="Paste a job description to mirror company-specific interview patterns..."
+            style={{ width: '100%', minHeight: '140px', borderRadius: '16px', padding: '16px', border: '1px solid var(--border-subtle)', fontSize: '0.95rem', resize: 'vertical' }}
+          />
+        </section>
+
+        <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <button className="btn-white" type="button" onClick={() => setTimePressure((v) => !v)} style={{ justifyContent: 'center' }}>
+            {timePressure ? 'Time-Pressure: ON' : 'Time-Pressure: OFF'}
+          </button>
+          <button className="btn-white" type="button" onClick={() => setPeerMode((v) => !v)} style={{ justifyContent: 'center' }}>
+            {peerMode ? 'Peer Practice: ON' : 'Peer Practice: OFF'}
+          </button>
+        </section>
+
         {/* Difficulty */}
         <section>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', color: 'var(--text-main)', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>
             <BarChart3 size={16} /> Difficulty Level
           </div>
           <div style={{ display: 'flex', gap: '16px' }}>
-            {difficulties.map(d => (
+            {difficulties.map((d) => (
               <button
                 key={d}
-                onClick={() => setDifficulty(d)}
+                onClick={() => setDifficulty(d as InterviewConfig['difficulty'])}
                 style={{
                   flex: 1,
                   padding: '20px',
@@ -122,7 +147,15 @@ const InterviewSetup: React.FC<SetupProps> = ({ onStart, onBack }) => {
           <button 
             className="btn-black" 
             style={{ padding: '16px 48px', fontSize: '1rem' }}
-            onClick={() => onStart({ role, difficulty, type })}
+            onClick={() => onStart({
+              role,
+              difficulty,
+              type,
+              personaStyle: 'default',
+              jobDescription: jobDescription.trim() || undefined,
+              timePressure,
+              peerMode,
+            })}
           >
             Launch Interview <ChevronRight size={20} />
           </button>

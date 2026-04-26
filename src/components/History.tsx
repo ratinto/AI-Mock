@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Calendar, Award, Flame, BarChart2, Star, ChevronRight, TrendingUp } from 'lucide-react';
+import { Calendar, Award, Flame, Star, ChevronRight, TrendingUp } from 'lucide-react';
 import { useServices } from '../app/ServicesProvider';
 
 const HistoryItem = ({ role, date, score, type }: { role: string, date: string, score: string, type: string }) => (

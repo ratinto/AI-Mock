@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useServices } from '../app/ServicesProvider';
+import GoogleSignInButton from './GoogleSignInButton';
 
 interface SignupProps {
   onBack: () => void;
@@ -10,9 +11,11 @@ interface SignupProps {
 const Signup: React.FC<SignupProps> = ({ onBack, onLogin, onSignup }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { auth } = useServices();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanedName = name.trim();
     const cleanedEmail = email.trim();
@@ -20,8 +23,27 @@ const Signup: React.FC<SignupProps> = ({ onBack, onLogin, onSignup }) => {
       alert('Please enter your name.');
       return;
     }
-    auth.signup(cleanedEmail, cleanedName);
-    onSignup();
+    try {
+      setIsSubmitting(true);
+      await auth.signup(cleanedEmail, cleanedName, password);
+      onSignup();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Signup failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogle = async (credential: string) => {
+    try {
+      setIsSubmitting(true);
+      await auth.loginWithGoogle(credential);
+      onSignup();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Google signup failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -97,6 +119,8 @@ const Signup: React.FC<SignupProps> = ({ onBack, onLogin, onSignup }) => {
               required
               type="password" 
               placeholder="Create a password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -111,10 +135,12 @@ const Signup: React.FC<SignupProps> = ({ onBack, onLogin, onSignup }) => {
             />
           </div>
 
-          <button type="submit" className="btn-black" style={{ width: '100%', justifyContent: 'center', height: '48px', marginTop: '12px' }}>
-            Create Account
+          <button disabled={isSubmitting} type="submit" className="btn-black" style={{ width: '100%', justifyContent: 'center', height: '48px', marginTop: '12px', opacity: isSubmitting ? 0.7 : 1 }}>
+            {isSubmitting ? 'Creating...' : 'Create Account'}
           </button>
         </form>
+
+        <GoogleSignInButton onCredential={handleGoogle} />
 
         <div style={{ marginTop: '32px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
           Already have an account? <a href="#" onClick={(e) => { e.preventDefault(); onLogin(); }} style={{ color: 'var(--text-main)', textDecoration: 'none', fontWeight: 700 }}>Log In</a>
