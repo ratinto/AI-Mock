@@ -47,6 +47,12 @@ import { browserLocalStorage } from '../infrastructure/storage/browserStorage';
  *  2. Injects them into application use cases.
  *  3. Returns a unified service interface for the UI layer.
  *
+ * ARCHITECTURAL DEBT NOTICE:
+ * - Currently relies on a mix of remote API calls and local storage.
+ * - Future: instantiate concrete repositories (RemoteUserRepository,
+ *   LocalAuthTokenRepository) implementing domain port interfaces.
+ * - Future: Move `lib/api.ts` into `src/infrastructure/apiClient.ts`.
+ *
  * @returns {Services} The fully wired service container
  */
 export function createServices() {
