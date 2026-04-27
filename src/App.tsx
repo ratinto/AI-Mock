@@ -9,6 +9,7 @@ import Signup from './components/Signup'
 import Dashboard from './components/Dashboard'
 import AboutUs from './components/AboutUs'
 import NotFound from './components/NotFound'
+import Contact from './components/Contact'
 import './App.css'
 
 function Home() {
@@ -84,7 +85,7 @@ function Home() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ color: 'var(--text-main)', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase' }}>Company</div>
                 <a href="#" onClick={(e) => { e.preventDefault(); navigate('/about'); }} style={{ color: 'inherit', textDecoration: 'none' }}>About Us</a>
-                <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Support</a>
+                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/contact'); }} style={{ color: 'inherit', textDecoration: 'none' }}>Support</a>
                 <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
               </div>
             </div>
@@ -119,6 +120,7 @@ function App() {
         <Route path="/login" element={<Login onBack={() => navigate('/')} onLogin={() => navigate('/dashboard')} onSignup={() => navigate('/signup')} />} />
         <Route path="/signup" element={<Signup onBack={() => navigate('/')} onLogin={() => navigate('/login')} onSignup={() => navigate('/dashboard')} />} />
         <Route path="/dashboard" element={<Dashboard onLogout={() => { sessionStorage.clear(); navigate('/'); }} />} />
+        <Route path="/contact" element={<Contact />} />
         {/* Catch-all route — shows 404 for any unmatched URL (Graceful Degradation) */}
         <Route path="*" element={<NotFound />} />
       </Routes>
