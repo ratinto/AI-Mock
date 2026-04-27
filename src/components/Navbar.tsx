@@ -37,8 +37,32 @@ const Navbar: React.FC<NavbarProps> = ({ onStart, onAbout }) => {
           >
             Resources
           </a>
-          <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Pricing</a>
-          <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Solutions</a>
+          <a
+            href="#features"
+            onClick={(e) => {
+              e.preventDefault();
+              const el = document.getElementById('features');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+          >
+            Solutions
+          </a>
+          <a
+            href="#pricing"
+            onClick={(e) => {
+              e.preventDefault();
+              const el = document.getElementById('pricing');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+          >
+            Pricing
+          </a>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
