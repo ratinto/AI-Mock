@@ -8,6 +8,7 @@ import Login from './components/Login'
 import Signup from './components/Signup'
 import Dashboard from './components/Dashboard'
 import AboutUs from './components/AboutUs'
+import NotFound from './components/NotFound'
 import './App.css'
 
 function Home() {
@@ -118,6 +119,8 @@ function App() {
         <Route path="/login" element={<Login onBack={() => navigate('/')} onLogin={() => navigate('/dashboard')} onSignup={() => navigate('/signup')} />} />
         <Route path="/signup" element={<Signup onBack={() => navigate('/')} onLogin={() => navigate('/login')} onSignup={() => navigate('/dashboard')} />} />
         <Route path="/dashboard" element={<Dashboard onLogout={() => { sessionStorage.clear(); navigate('/'); }} />} />
+        {/* Catch-all route — shows 404 for any unmatched URL (Graceful Degradation) */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   )
