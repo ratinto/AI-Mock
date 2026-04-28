@@ -420,7 +420,7 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           </div>
         </div>
 
-        <button className="nav-item" style={{ marginTop: '0', color: '#ef4444' }} onClick={onLogout}>
+        <button className="nav-item" style={{ marginTop: '0', color: '#ef4444' }} onClick={() => { auth.logout(); onLogout(); }}>
           <LogOut size={20} /> Logout
         </button>
       </aside>
