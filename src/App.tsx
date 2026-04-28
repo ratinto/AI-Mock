@@ -119,7 +119,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login onBack={() => navigate('/')} onLogin={() => navigate('/dashboard')} onSignup={() => navigate('/signup')} />} />
         <Route path="/signup" element={<Signup onBack={() => navigate('/')} onLogin={() => navigate('/login')} onSignup={() => navigate('/dashboard')} />} />
-        <Route path="/dashboard" element={<Dashboard onLogout={() => { sessionStorage.clear(); navigate('/'); }} />} />
+        <Route path="/dashboard" element={<Dashboard onLogout={() => { navigate('/'); }} />} />
         <Route path="/contact" element={<Contact />} />
         {/* Catch-all route — shows 404 for any unmatched URL (Graceful Degradation) */}
         <Route path="*" element={<NotFound />} />
