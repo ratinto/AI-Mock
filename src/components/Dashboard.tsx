@@ -341,7 +341,7 @@ const Dashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           onStart={(config) => {
             setInterviewConfig({
               ...config,
-              personaStyle: activePersonaName,
+              personaStyle: activePersonaName, // Override default from InterviewSetup with the globally selected one
             });
             setActiveView('interview'); 
           }} 

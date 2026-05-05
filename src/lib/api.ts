@@ -160,7 +160,7 @@ export const api = {
     });
   },
 
-  async generateInterviewQuestions(params: { type: string, jobDescription?: string, resumeData?: any }) {
+  async generateInterviewQuestions(params: { type: string, jobDescription?: string, resumeData?: any, personaStyle?: string }) {
     return request<{ questions: any[] }>('/interview/questions', {
       method: 'POST',
       body: JSON.stringify(params),

@@ -21,7 +21,10 @@ export async function speechToTextOnce(): Promise<SpeechToTextResult> {
       const result = event?.results?.[0]?.[0];
       resolve({ transcript: String(result?.transcript ?? ''), confidence: result?.confidence });
     };
-    rec.onerror = (e: any) => reject(e);
+    rec.onerror = (e: any) => {
+      console.error('Speech recognition error:', e.error);
+      reject(new Error(`Speech recognition failed: ${e.error}`));
+    };
     rec.onend = () => {
       // If no result fired, we still resolve empty.
       // Callers can treat empty transcript as cancellation.

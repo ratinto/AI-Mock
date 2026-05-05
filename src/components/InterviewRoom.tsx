@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Mic, Square, GripHorizontal, ChevronRight, Play, RefreshCw, Loader2, Sparkles, Clock, Code } from 'lucide-react';
-import type { InterviewConfig, QuestionAnalysis } from '../domain/user';
-import { buildSessionReport } from '../application/useCases/interview';
+import { Mic, ChevronRight, Loader2, Sparkles, Clock, Code } from 'lucide-react';
+import type { QuestionAnalysis } from '../domain/user';
 import { speechToTextOnce } from '../lib/speech';
-import Card from './ui/Card';
-import Button from './ui/Button';
-import { useApiCache } from '../hooks/useApiCache';
-import { api } from '../lib/api';
+import * as apiModule from '../lib/api';
+const api = apiModule.api;
+import { buildSessionReport } from '../application/useCases/interview';
+import type { InterviewConfig } from '../domain/user';
 
-type Props = {
+interface Props {
   config: InterviewConfig;
-  onComplete: (report: any) => void;
-};
+  onEnd: (report: any) => void;
+}
 
 const AIInterviewerOrb = () => (
   <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'linear-gradient(135deg, var(--bg-hover) 0%, var(--border-focus) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 40px rgba(0,0,0,0.05)', position: 'relative' }}>
@@ -22,7 +21,7 @@ const AIInterviewerOrb = () => (
   </div>
 );
 
-const InterviewRoom: React.FC<Props> = ({ config, onComplete }) => {
+const InterviewRoom: React.FC<Props> = ({ config, onEnd }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [isRecording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -38,13 +37,14 @@ const InterviewRoom: React.FC<Props> = ({ config, onComplete }) => {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Derive persona
-  const personaName = config.type === 'DSA' ? 'Senior Engineer Model' : 'Product Manager Model';
+  const personaName = config.personaStyle && config.personaStyle !== 'default' 
+    ? config.personaStyle 
+    : (config.type === 'DSA' ? 'Senior Engineer Model' : 'Product Manager Model');
 
   // Derived metrics (approx) for UI
   const liveWpm = Math.max(0, Math.round((transcript.split(' ').length / ((Date.now() - questionStart) / 1000)) * 60)) || 0;
   const liveFillerCount = (transcript.match(/um|uh|like/gi) || []).length;
-  const liveFollowUp = hintText || 'Keep expanding on trade-offs securely...';
+  const liveFollowUp = hintText || (analyses.length > 0 ? analyses[analyses.length - 1].followUp : 'Looking forward to your answer...');
 
   useEffect(() => {
     // Start camera stream on load
@@ -73,7 +73,8 @@ const InterviewRoom: React.FC<Props> = ({ config, onComplete }) => {
         const res = await api.generateInterviewQuestions({ 
           type: config.type, 
           jobDescription: config.jobDescription, 
-          resumeData: undefined // pass actual resume later if needed
+          resumeData: undefined, // pass actual resume later if needed
+          personaStyle: config.personaStyle || config.role, 
         });
         setQuestions(res.questions || []);
       } catch (err) {
@@ -119,8 +120,10 @@ const InterviewRoom: React.FC<Props> = ({ config, onComplete }) => {
     try {
       const result = await speechToTextOnce();
       if (result.transcript) setTranscript((prev) => `${prev}${prev ? ' ' : ''}${result.transcript}`);
-    } catch {
-      setTranscript((prev) => `${prev}${prev ? ' ' : ''}In my previous role, I optimized latency using Redis and async messaging with clear trade-offs.`);
+    } catch(err: any) {
+      console.error("Speech recognition failed:", err);
+      // Removed the fake hardcoded injection text so users only get real dynamic data
+      alert(`Microphone error: ${err.message || 'Check browser permissions.'}`);
     } finally {
       setRecording(false);
     }
@@ -146,7 +149,7 @@ const InterviewRoom: React.FC<Props> = ({ config, onComplete }) => {
       console.error("Failed to post session", err);
     }
 
-    onComplete(report);
+    onEnd(report);
   };
 
   const submitAnswer = async () => {
@@ -187,6 +190,9 @@ const InterviewRoom: React.FC<Props> = ({ config, onComplete }) => {
       
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion(prev => prev + 1);
+        setTranscript('');
+        setCodingAnswer('// Write your solution here');
+        setHintText('');
       } else {
         finishSession([...analyses, analysis]);
       }
@@ -292,13 +298,13 @@ const InterviewRoom: React.FC<Props> = ({ config, onComplete }) => {
 
           {showEditor ? (
             <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
-               <textarea value={codingAnswer} onChange={(e) => setCodingAnswer(e.target.value)} style={{ flexGrow: 1, minHeight: '220px', background: '#000', borderRadius: '20px', padding: '20px', color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', lineHeight: 1.6, border: '1px solid var(--border-subtle)' }} />
-               <div style={{ display: 'flex', gap: '12px' }}>
-                 <button className="btn-white" onClick={() => setHintText('Try identifying brute-force first, then optimize with state tracking. Also prepare time/space complexity explanation.')}>Need Hint</button>
-                 <button className="btn-white" onClick={() => setHintText('Follow-up: what is your time complexity, and how would this change for streaming input?')}>Ask Follow-up</button>
-               </div>
-               {hintText && <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', fontSize: '0.9rem' }}>{hintText}</div>}
-               <button className="btn-white" onClick={() => setShowEditor(false)} style={{ width: 'fit-content' }}>Close IDE</button>
+              <textarea value={codingAnswer} onChange={(e) => setCodingAnswer(e.target.value)} style={{ flexGrow: 1, minHeight: '220px', background: '#000', borderRadius: '20px', padding: '20px', color: '#fff', fontFamily: 'monospace', fontSize: '0.95rem', lineHeight: 1.6, border: '1px solid var(--border-subtle)' }} />
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button className="btn-white" onClick={() => setHintText(`Hint: Focus on answering via ${questions[currentQuestion]?.type} structures.`)}>Need Hint</button>
+                <button className="btn-white" onClick={() => setHintText('Ensure you cover time and space complexity if applicable.')}>Ask Follow-up</button>
+              </div>
+              {hintText && <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', fontSize: '0.9rem' }}>{hintText}</div>}
+              <button className="btn-white" onClick={() => setShowEditor(false)} style={{ width: 'fit-content' }}>Close IDE</button>
             </div>
           ) : (
             <div style={{ display: 'flex', gap: '16px', marginBottom: '48px' }}>
