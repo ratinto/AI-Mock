@@ -1,49 +1,30 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Mic, Clock, ChevronRight, Code, Sparkles } from 'lucide-react';
-import { useServices } from '../app/ServicesProvider';
-import { getSelectedPersona } from './PersonaLab';
-import type { InterviewConfig, SessionReport } from '../domain/user';
+import React, { useState, useEffect, useRef } from 'react';
+import { Camera, Mic, Square, GripHorizontal, ChevronRight, Play, RefreshCw, Loader2, Sparkles, Clock, Code } from 'lucide-react';
+import type { InterviewConfig, QuestionAnalysis } from '../domain/user';
+import { buildSessionReport } from '../application/useCases/interview';
 import { speechToTextOnce } from '../lib/speech';
-import { buildQuestions, scoreAnswer, buildSessionReport, generateFollowUp } from '../application/useCases/interview';
+import Card from './ui/Card';
+import Button from './ui/Button';
+import { useApiCache } from '../hooks/useApiCache';
+import { api } from '../lib/api';
 
-// Pure CSS Animated AI Orb (Premium Monochrome Aesthetic)
+type Props = {
+  config: InterviewConfig;
+  onComplete: (report: any) => void;
+};
+
 const AIInterviewerOrb = () => (
-  <div style={{ 
-    width: '200px', 
-    height: '200px', 
-    borderRadius: '50%', 
-    background: `radial-gradient(circle at 30% 30%, #fff, #333)`,
-    boxShadow: `0 30px 60px rgba(0,0,0,0.2), inset 0 0 40px rgba(255, 255, 255, 0.5)`,
-    position: 'relative',
-    animation: 'orbFloat 5s ease-in-out infinite',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: '1px solid rgba(0,0,0,0.1)'
-  }}>
-    <div style={{ 
-      width: '80%',
-      height: '80%',
-      borderRadius: '50%',
-      border: '1px solid rgba(255,255,255,0.4)',
-      animation: 'orbPulse 3s ease-in-out infinite'
-    }} />
-    <style>{`
-      @keyframes orbFloat {
-        0%, 100% { transform: translateY(0) scale(1); }
-        50% { transform: translateY(-15px) scale(1.02); }
-      }
-      @keyframes orbPulse {
-        0%, 100% { transform: scale(1); opacity: 0.3; }
-        50% { transform: scale(1.1); opacity: 0.6; }
-      }
-    `}</style>
+  <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'linear-gradient(135deg, var(--bg-hover) 0%, var(--border-focus) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 40px rgba(0,0,0,0.05)', position: 'relative' }}>
+    <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg, #000 0%, #222 100%)', position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="pulse-dot" style={{ width: 12, height: 12, background: 'var(--bg-main)', borderRadius: '50%' }}></div>
+    </div>
+    <div className="rotate-slow" style={{ position: 'absolute', inset: -10, border: '1px dashed var(--border-subtle)', borderRadius: '50%', zIndex: 1 }}></div>
   </div>
 );
 
-const InterviewRoom: React.FC<{ onEnd: (report: SessionReport) => void; config: InterviewConfig }> = ({ onEnd, config }) => {
+const InterviewRoom: React.FC<Props> = ({ config, onComplete }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
+  const [isRecording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [timer, setTimer] = useState(300);
   const [showEditor, setShowEditor] = useState(false);
@@ -52,33 +33,57 @@ const InterviewRoom: React.FC<{ onEnd: (report: SessionReport) => void; config: 
   const [analyses, setAnalyses] = useState<any[]>([]);
   const [hintText, setHintText] = useState('');
   const [codingAnswer, setCodingAnswer] = useState('// Write your solution here');
-  const { auth, sessions } = useServices();
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const persona = useMemo(() => getSelectedPersona(), []);
-  const personaName = persona?.name ?? 'AI Evaluator';
-  const questions = useMemo(() => buildQuestions(config), [config]);
-  const liveFillerCount = useMemo(() => {
-    const lower = transcript.toLowerCase();
-    const fillers = ['um', 'umm', 'uh', 'like', 'you know', 'actually', 'basically'];
-    return fillers.reduce((sum, word) => sum + (lower.match(new RegExp(`\\b${word}\\b`, 'g'))?.length ?? 0), 0);
-  }, [transcript]);
-  const liveWpm = useMemo(() => {
-    const elapsedSec = Math.max(1, Math.round((Date.now() - questionStart) / 1000));
-    const words = transcript.trim().split(/\s+/).filter(Boolean).length;
-    return Math.round((words / elapsedSec) * 60);
-  }, [transcript, questionStart]);
-  const liveFollowUp = useMemo(() => (transcript.trim() ? generateFollowUp(transcript) : 'Start answering to get a dynamic follow-up question.'), [transcript]);
+  // Derive persona
+  const personaName = config.type === 'DSA' ? 'Senior Engineer Model' : 'Product Manager Model';
+
+  // Derived metrics (approx) for UI
+  const liveWpm = Math.max(0, Math.round((transcript.split(' ').length / ((Date.now() - questionStart) / 1000)) * 60)) || 0;
+  const liveFillerCount = (transcript.match(/um|uh|like/gi) || []).length;
+  const liveFollowUp = hintText || 'Keep expanding on trade-offs securely...';
 
   useEffect(() => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          if (videoRef.current) videoRef.current.srcObject = stream;
-        })
-        .catch(err => console.error("Webcam Error:", err));
-    }
+    // Start camera stream on load
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then((stream) => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      })
+      .catch(console.error);
+
+    return () => {
+      // Stop camera stream on unmount
+      if (videoRef.current?.srcObject) {
+        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+        tracks.forEach(track => track.stop());
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    // Dynamically fetch questions from backend instead of building statically
+    const fetchQuestions = async () => {
+      try {
+        setIsLoadingQuestions(true);
+        const res = await api.generateInterviewQuestions({ 
+          type: config.type, 
+          jobDescription: config.jobDescription, 
+          resumeData: undefined // pass actual resume later if needed
+        });
+        setQuestions(res.questions || []);
+      } catch (err) {
+        console.error("Failed to load questions:", err);
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    };
+    fetchQuestions();
+  }, [config]);
 
   useEffect(() => {
     setTimer(questions[currentQuestion]?.limitSec ?? 180);
@@ -110,62 +115,105 @@ const InterviewRoom: React.FC<{ onEnd: (report: SessionReport) => void; config: 
   };
 
   const startSTT = async () => {
-    setIsRecording(true);
+    setRecording(true);
     try {
       const result = await speechToTextOnce();
       if (result.transcript) setTranscript((prev) => `${prev}${prev ? ' ' : ''}${result.transcript}`);
     } catch {
       setTranscript((prev) => `${prev}${prev ? ' ' : ''}In my previous role, I optimized latency using Redis and async messaging with clear trade-offs.`);
     } finally {
-      setIsRecording(false);
+      setRecording(false);
     }
   };
 
-  const finalizeCurrentAnswer = () => {
-    const elapsedSec = Math.max(1, Math.round((Date.now() - questionStart) / 1000));
-    const answerToEvaluate = showEditor ? codingAnswer : transcript;
-    const analysis = scoreAnswer(
-      questions[currentQuestion].text,
-      answerToEvaluate,
-      elapsedSec,
-      bodyLanguageScore,
-      timer > 0,
+  const finishSession = async (finalAnalyses: any[]) => {
+    const report = buildSessionReport(config, finalAnalyses);
+
+    try {
+      const user = await api.me();
+      if (user) {
+        const track = config.type === 'HR / Behavioral' ? 'hr' : config.type === 'System Design' ? 'dev' : 'dsa';
+        await api.addSession({
+          id: report.id,
+          role: config.role || 'Software Engineer',
+          date: new Date(report.date).toLocaleDateString(),
+          score: `${report.overall}%`,
+          type: config.type,
+          report: report,
+        }, track);
+      }
+    } catch(err) {
+      console.error("Failed to post session", err);
+    }
+
+    onComplete(report);
+  };
+
+  const submitAnswer = async () => {
+    if (!questions.length) return;
+    
+    // Stop recording quickly
+    setRecording(false);
+    
+    try {
+      setIsEvaluating(true);
+      const elapsedSec = Math.max(1, Math.round((Date.now() - questionStart) / 1000));
+      const bodyLanguageScore = Math.floor(Math.random() * 20) + 70; // Simulated for now
+      
+      const evaluation = await api.evaluateInterviewAnswer({
+        question: questions[currentQuestion].text,
+        answer: transcript || 'No answer provided.',
+        elapsedSec,
+        bodyLanguageScore,
+        finishedInTime: elapsedSec <= questions[currentQuestion].limitSec
+      });
+      
+      const analysis: QuestionAnalysis = {
+        question: questions[currentQuestion].text,
+        userAnswer: transcript || 'No answer provided.',
+        idealAnswer: evaluation.idealAnswer,
+        followUp: evaluation.followUp,
+        score: evaluation.score,
+        communication: evaluation.communication,
+        confidence: evaluation.confidence,
+        conciseness: evaluation.conciseness,
+        fillerWords: 0, // Placeholder
+        speakingPaceWpm: 0, // Placeholder
+        bodyLanguageScore,
+        finishedInTime: elapsedSec <= questions[currentQuestion].limitSec,
+      };
+      
+      setAnalyses(prev => [...prev, analysis]);
+      
+      if (currentQuestion < questions.length - 1) {
+        setCurrentQuestion(prev => prev + 1);
+      } else {
+        finishSession([...analyses, analysis]);
+      }
+    } catch (err) {
+      console.error("Evaluation failed", err);
+      // Fallback behavior if evaluation fails could go here 
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
+  const handleNext = () => {
+    submitAnswer();
+  };
+
+  if (isLoadingQuestions) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '20px' }}>
+        <Loader2 size={48} className="animate-spin text-primary" />
+        <h2>AI is carefully drafting your personalized questions...</h2>
+      </div>
     );
-    setAnalyses((prev) => [...prev, analysis]);
-  };
+  }
 
-  const handleNext = async () => {
-    finalizeCurrentAnswer();
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion((c) => c + 1);
-      setTranscript('');
-      setHintText('');
-      return;
-    }
-
-    const report = buildSessionReport(config, [...analyses, scoreAnswer(
-      questions[currentQuestion].text,
-      showEditor ? codingAnswer : transcript,
-      Math.max(1, Math.round((Date.now() - questionStart) / 1000)),
-      bodyLanguageScore,
-      timer > 0,
-    )]);
-
-    const user = auth.getCurrentUser();
-    if (user) {
-      const track = config.type === 'HR / Behavioral' ? 'hr' : config.type === 'System Design' ? 'dev' : 'dsa';
-      await sessions.addSession(user.email, {
-        id: report.id,
-        role: config.role,
-        date: new Date(report.date).toLocaleDateString(),
-        score: `${report.overall}%`,
-        type: config.type,
-        report,
-      }, track);
-    }
-
-    onEnd(report);
-  };
+  if (!questions.length) {
+    return <div>Failed to load interview questions. Please try again.</div>;
+  }
 
   return (
     <div className="animate-fade" style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '40px', height: 'calc(100vh - 140px)' }}>
@@ -306,7 +354,8 @@ const InterviewRoom: React.FC<{ onEnd: (report: SessionReport) => void; config: 
                 style={{ padding: '0 40px', height: '64px', borderRadius: '20px', fontSize: '1.1rem' }}
                 onClick={handleNext}
                >
-                 {currentQuestion === questions.length - 1 ? 'Finish Session' : 'Continue'} <ChevronRight size={22} />
+                 {isEvaluating ? <Loader2 className="animate-spin" size={22} /> : (currentQuestion === questions.length - 1 ? 'Finish Session' : 'Continue')} 
+                 {!isEvaluating && <ChevronRight size={22} />}
                </button>
             </div>
           </div>

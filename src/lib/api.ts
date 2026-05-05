@@ -158,5 +158,19 @@ export const api = {
     return request<any>(`/resume/${id}`, {
       method: 'DELETE'
     });
+  },
+
+  async generateInterviewQuestions(params: { type: string, jobDescription?: string, resumeData?: any }) {
+    return request<{ questions: any[] }>('/interview/questions', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async evaluateInterviewAnswer(params: { question: string, answer: string, elapsedSec: number, bodyLanguageScore: number, finishedInTime: boolean }) {
+    return request<any>('/interview/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
   }
 };
